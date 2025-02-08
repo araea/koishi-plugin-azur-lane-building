@@ -5,6 +5,19 @@ import * as cheerio from 'cheerio';
 
 export const name = 'azur-lane-building'
 export const inject = ['database', 'puppeteer']
+export const usage = `## 使用
+
+1. 设置指令别名。
+2. 发送 \`alb.每日魔方\` 获取魔方。
+3. 发送 \`alb.抽轻型池 [次数（可选）]\` 抽卡。
+
+## 补充
+
+* 可手动更新建造清单（[参考](https://wiki.biligame.com/blhx/index.php?title=%E5%BB%BA%E9%80%A0%E6%A8%A1%E6%8B%9F%E5%99%A8&action=edit)）
+
+## QQ 群
+
+* 956758505`
 
 // pz*
 export interface Config {
