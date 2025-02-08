@@ -1,6 +1,6 @@
 {
   "name": "koishi-plugin-azur-lane-building",
-  "description": "",
+  "description": "Koishi 的碧蓝航线建造（抽卡）模拟器插件。",
   "version": "0.0.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
@@ -8,15 +8,35 @@
     "lib",
     "dist"
   ],
-  "license": "MIT",
-  "scripts": {},
+  "koishi": {
+    "service": {
+      "required": [
+        "database",
+        "puppeteer"
+      ]
+    }
+  },
+  "license": "MIT OR Apache-2.0",
+  "author": "Nawyjx <3373167460@qq.com>",
+  "homepage": "https://www.npmjs.com/package/koishi-plugin-azur-lane-building?activeTab=readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/araea/koishi-plugin-azur-lane-building.git"
+  },
   "keywords": [
     "chatbot",
     "koishi",
-    "plugin"
+    "plugin",
+    "azur-lane",
+    "碧蓝航线",
+    "建造",
+    "抽卡",
+    "模拟器"
   ],
-  "devDependencies": {},
   "peerDependencies": {
     "koishi": "^4.18.3"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
   }
 }
