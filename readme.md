@@ -1,7 +1,7 @@
 # koishi-plugin-azur-lane-building
 
-[<img alt="github" src="https://img.shields.io/badge/github-araea/azur_lane_building-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/araea/koishi-plugin-azur-lane-building)
-[<img alt="npm" src="https://img.shields.io/npm/v/koishi-plugin-azur-lane-building.svg?style=for-the-badge&color=fc8d62&logo=npm" height="20">](https://www.npmjs.com/package/koishi-plugin-azur-lane-building)
+[![github](https://img.shields.io/badge/github-araea/azur_lane_building-8da0cb?style=for-the-badge&labelColor=555555&logo=github)](https://github.com/araea/koishi-plugin-azur-lane-building)
+[![npm](https://img.shields.io/npm/v/koishi-plugin-azur-lane-building.svg?style=for-the-badge&color=fc8d62&logo=npm)](https://www.npmjs.com/package/koishi-plugin-azur-lane-building)
 
 Koishi 的碧蓝航线建造（抽卡）模拟器插件。
 
@@ -26,19 +26,10 @@ Koishi 的碧蓝航线建造（抽卡）模拟器插件。
 
 * 956758505
 
-<br>
+---
 
-#### License
+### License
 
-<sup>
-Licensed under either of <a href="../ds-r-c/LICENSE-APACHE">Apache License, Version
-2.0</a> or <a href="../ds-r-c/LICENSE-MIT">MIT license</a> at your option.
-</sup>
+_Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option._
 
-<br>
-
-<sub>
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this crate by you, as defined in the Apache-2.0 license, shall
-be dual licensed as above, without any additional terms or conditions.
-</sub>
+_Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this crate by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions._

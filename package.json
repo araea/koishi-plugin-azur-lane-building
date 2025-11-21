@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-azur-lane-building",
   "description": "Koishi 的碧蓝航线建造（抽卡）模拟器插件。",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -34,9 +34,9 @@
     "模拟器"
   ],
   "peerDependencies": {
-    "koishi": "^4.18.7"
+    "koishi": "^4.18.9"
   },
   "dependencies": {
-    "cheerio": "^1.0.0"
+    "cheerio": "^1.1.2"
   }
 }
