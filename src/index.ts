@@ -93,7 +93,7 @@ export function apply(ctx: Context, config: Config) {
       return reply(session, caption ? [caption, h.image(buffer, 'image/png')] : h.image(buffer, 'image/png'))
     } catch (error) {
       logger.error('生成图片失败：%s', error.message)
-      return reply(session, '生成图片失败，请查看后台日志。')
+      return reply(session, '❌ 生成图片失败，请查看后台日志。')
     }
   }
 
@@ -140,11 +140,11 @@ export function apply(ctx: Context, config: Config) {
           buildStats: emptyStats(),
           buildHistory: [],
         })
-        return reply(session, `指挥官，欢迎入驻！\n初始资金 ${reward} 魔方已到账。${line()}`)
+        return reply(session, `✅ 账号已激活，到账 ${reward} 魔方。${line()}`)
       }
 
       if (isSameDay(now, record.lastCheckInTimestamp)) {
-        return reply(session, `今天已经领过了哦～${line()}`)
+        return reply(session, `⚠️ 今天已经领过每日魔方了。${line()}`)
       }
       const cube = record.cube + reward
       await ctx.database.set('azur_lane_building', { id: record.id }, {
@@ -152,21 +152,21 @@ export function apply(ctx: Context, config: Config) {
         cube,
         lastCheckInTimestamp: now,
       })
-      return reply(session, `指挥官，欢迎回来！\n领取 ${reward} 魔方成功。\n当前库存：${cube}${line()}`)
+      return reply(session, `✅ 领取 ${reward} 魔方成功。当前库存：${cube}${line()}`)
     })
 
   for (const [key, entry] of Object.entries(POOLS)) {
     cmd.subcommand(`.抽${entry.name}池 [times:posint]`, `进行${entry.name}舰建造`)
       .action(async ({ session }, times = 1) => {
         if (times > config.maxBuildPerCommand) {
-          return reply(session, `单次建造不能超过 ${config.maxBuildPerCommand} 发哦。`)
+          return reply(session, `⚠️ 单次建造不能超过 ${config.maxBuildPerCommand} 发。`)
         }
         const record = await profile(session.userId)
-        if (!record) return reply(session, `请先领取每日魔方激活账号！${line()}`)
+        if (!record) return reply(session, `⚠️ 请先发送「alb.每日魔方」激活账号。${line()}`)
 
         const need = entry.cost * times
         if (record.cube < need) {
-          return reply(session, `魔方不足！\n当前：${record.cube}\n需要：${need}${line()}`)
+          return reply(session, `⚠️ 魔方不足。当前 ${record.cube}，需要 ${need}。${line()}`)
         }
 
         const stats: BuildStats = { ...emptyStats(), ...record.buildStats }
@@ -206,7 +206,7 @@ export function apply(ctx: Context, config: Config) {
         })
 
         return picture(session, buildResult(records),
-          `${times} 发${entry.name}建造完成（消耗 ${need} 魔方，剩余 ${cube}）\n`)
+          `✅ ${times} 发${entry.name}建造完成（消耗 ${need} 魔方，剩余 ${cube}）\n`)
       })
 
     cmd.subcommand(`.${entry.name}池`, `查看${entry.name}舰建造池`)
@@ -216,8 +216,8 @@ export function apply(ctx: Context, config: Config) {
   cmd.subcommand('.抽卡记录', '查看自己的建造统计')
     .action(async ({ session }) => {
       const record = await profile(session.userId)
-      if (!record) return reply(session, `请先领取每日魔方激活账号！${line()}`)
-      if (!record.buildCount) return reply(session, '指挥官还没有进行过建造哦～')
+      if (!record) return reply(session, `⚠️ 请先发送「alb.每日魔方」激活账号。${line()}`)
+      if (!record.buildCount) return reply(session, '⚠️ 还没有进行过建造。')
 
       const favourite = Object.entries(record.shipCounts ?? {})
         .reduce((best, entry) => entry[1] > best[1] ? entry : best, ['无', 0])[0]
@@ -231,7 +231,7 @@ export function apply(ctx: Context, config: Config) {
         .orderBy('collectionRate', 'desc')
         .limit(config.maxRank)
         .execute()
-      if (!rows.length) return reply(session, `排行榜空空如也，快来当第一个指挥官吧！${line()}`)
+      if (!rows.length) return reply(session, `⚠️ 排行榜还空着。${line()}`)
       return picture(session, ranking(rows))
     })
 }
