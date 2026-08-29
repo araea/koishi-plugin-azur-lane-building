@@ -33,20 +33,18 @@ Koishi 的碧蓝航线建造（抽卡）模拟器插件。
 
 ## 补充
 
-* 建造清单可在配置项里手动更新（[参考](https://wiki.biligame.com/blhx/index.php?title=%E5%BB%BA%E9%80%A0%E6%A8%A1%E6%8B%9F%E5%99%A8&action=edit)）
-* 舰娘台词从 wiki 抓取并缓存，未命中缓存时先用内置台词顶上，不会拖慢回复；
-  不需要的话可以在配置里关掉
+- 建造清单可在配置项里手动更新（[参考](https://wiki.biligame.com/blhx/index.php?title=%E5%BB%BA%E9%80%A0%E6%A8%A1%E6%8B%9F%E5%99%A8&action=edit)）
+- 舰娘台词从 wiki 抓取并缓存，未命中缓存时先用内置台词顶上，不会拖慢回复；不需要的话可以在配置里关掉
 
 ## 致谢
 
-* [Koishi](https://koishi.chat/)
-* [RainSun](https://forum.koishi.xyz/t/topic/6427/21)
-* [碧蓝航线建造模拟器](https://wiki.biligame.com/blhx/%E5%BB%BA%E9%80%A0%E6%A8%A1%E6%8B%9F%E5%99%A8)
-
+- [Koishi](https://koishi.chat/)
+- [RainSun](https://forum.koishi.xyz/t/topic/6427/21)
+- [碧蓝航线建造模拟器](https://wiki.biligame.com/blhx/%E5%BB%BA%E9%80%A0%E6%A8%A1%E6%8B%9F%E5%99%A8)
 
 ## QQ 群
 
-* 956758505
+- 956758505
 
 <br>
 
