@@ -38,9 +38,9 @@
     "模拟器"
   ],
   "peerDependencies": {
-    "koishi": "^4.18.9"
+    "koishi": "^4.18.11"
   },
   "dependencies": {
-    "cheerio": "^1.1.2"
+    "cheerio": "^1.2.0"
   }
 }
