@@ -202,29 +202,36 @@ export function apply(ctx: Context, config: Config) {
           records.push({
             index: record.buildCount + i + 1,
             buildType: entry.type,
-            rarity: rarity.name,
-            textColor: rarity.textColor,
+            rarityKey: rarity.key,
             shipName,
             times: counts[shipName],
           })
         }
 
         const cube = record.cube - need
+        const buildCount = record.buildCount + times
+        const owned = Object.keys(counts).length
         await ctx.database.set('azur_lane_building', { id: record.id }, {
           username: session.username,
           cube,
-          buildCount: record.buildCount + times,
+          buildCount,
           shipCounts: counts,
           buildStats: stats,
-          collectionRate: totalShips ? Object.keys(counts).length / totalShips : 0,
+          collectionRate: totalShips ? owned / totalShips : 0,
         })
 
-        return picture(session, buildResult(records),
-          `✅ ${times} 发${entry.name}建造完成（消耗 ${need} 魔方，剩余 ${cube}）\n`)
+        return picture(session, buildResult(records, {
+          poolName: entry.name,
+          times,
+          cost: need,
+          cube,
+          username: session.username,
+          buildCount,
+        }), `✅ ${times} 发${entry.name}建造完成（消耗 ${need} 魔方，剩余 ${cube}）\n`)
       })
 
     cmd.subcommand(`.${entry.name}池`, `查看${entry.name}舰建造池`)
-      .action(({ session }) => picture(session, poolTable(entry.pool as ShipRareList, entry.odds as Record<RarityKey, number>)))
+      .action(({ session }) => picture(session, poolTable(entry.pool as ShipRareList, entry.odds as Record<RarityKey, number>, entry.type)))
   }
 
   cmd.subcommand('.抽卡记录', '查看自己的建造统计')
@@ -233,9 +240,21 @@ export function apply(ctx: Context, config: Config) {
       if (!record) return reply(session, `⚠️ 请先发送「alb.每日魔方」激活账号。${line()}`)
       if (!record.buildCount) return reply(session, '⚠️ 还没有进行过建造。')
 
-      const favourite = Object.entries(record.shipCounts ?? {})
-        .reduce((best, entry) => entry[1] > best[1] ? entry : best, ['无', 0])[0]
-      return picture(session, statsTable(record.buildStats, favourite, await wiki.avatar(favourite)))
+      const [favouriteName, favouriteTimes] = Object.entries(record.shipCounts ?? {})
+        .reduce((best, entry) => entry[1] > best[1] ? entry : best, ['无', 0])
+      const owned = Object.keys(record.shipCounts ?? {}).length
+      return picture(session, statsTable(record.buildStats, {
+        name: favouriteName,
+        times: favouriteTimes,
+        avatar: await wiki.avatar(favouriteName),
+      }, {
+        username: session.username,
+        buildCount: record.buildCount,
+        cube: record.cube,
+        collectionRate: record.collectionRate ?? 0,
+        owned,
+        totalShips,
+      }))
     })
 
   cmd.subcommand('.收藏率排行榜', '查看收藏率排行榜')
