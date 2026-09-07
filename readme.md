@@ -1,24 +1,24 @@
-koishi-plugin-azur-lane-building
-================================
+# koishi-plugin-azur-lane-building
 
-[<img alt="github" src="https://img.shields.io/badge/github-araea/koishi__plugin__azur__lane__building-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/araea/koishi-plugin-azur-lane-building)
-[<img alt="npm" src="https://img.shields.io/npm/v/koishi-plugin-azur-lane-building.svg?style=for-the-badge&color=fc8d62&logo=npm" height="20">](https://www.npmjs.com/package/koishi-plugin-azur-lane-building)
+碧蓝航线建造模拟器插件。
 
-Koishi 的碧蓝航线建造模拟器插件。
+## 安装
 
-## 使用
+~~~sh
+yarn add koishi-plugin-azur-lane-building
+~~~
 
-`alb.每日魔方` 领取魔方，`alb.抽轻型池 [次数]` 开始建造。
+在 Koishi 配置中启用 koishi-plugin-azur-lane-building。
 
 ## 指令
 
 | 指令 | 说明 |
 | --- | --- |
-| `alb.每日魔方` | 每日领取魔方 |
-| `alb.抽轻型池 / 抽重型池 / 抽特型池 [次数]` | 建造 |
-| `alb.轻型池 / 重型池 / 特型池` | 查看池内容与出货率 |
-| `alb.抽卡记录` | 个人建造统计 |
-| `alb.收藏率排行榜` | 收藏率榜 |
+| alb.每日魔方 | 每日领取魔方 |
+| alb.抽轻型池 / 抽重型池 / 抽特型池 [次数] | 建造 |
+| alb.轻型池 / 重型池 / 特型池 | 查看池内容与出货率 |
+| alb.抽卡记录 | 查看个人建造统计 |
+| alb.收藏率排行榜 | 查看收藏率排行 |
 
 ## 出货率
 
@@ -30,23 +30,8 @@ Koishi 的碧蓝航线建造模拟器插件。
 | 稀有 | 26% | 51% |
 | 普通 | 55% | 28.8% |
 
-## QQ 群
+需要 Koishi 的 database 和 puppeteer 服务。
 
-956758505
+## 许可证
 
-<br>
-
-#### License
-
-<sup>
-Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
-2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.
-</sup>
-
-<br>
-
-<sub>
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this crate by you, as defined in the Apache-2.0 license, shall
-be dual licensed as above, without any additional terms or conditions.
-</sub>
+可按 [Apache-2.0](LICENSE-APACHE) 或 [MIT](LICENSE-MIT) 使用。
