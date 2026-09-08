@@ -231,7 +231,7 @@ export function apply(ctx: Context, config: Config) {
       })
 
     cmd.subcommand(`.${entry.name}池`, `查看${entry.name}舰建造池`)
-      .action(({ session }) => picture(session, poolTable(entry.pool as ShipRareList, entry.odds as Record<RarityKey, number>, entry.type)))
+      .action(({ session }) => picture(session, poolTable(entry.pool as ShipRareList, entry.odds as Record<RarityKey, number>, entry.type, entry.cost)))
   }
 
   cmd.subcommand('.抽卡记录', '查看自己的建造统计')
@@ -265,6 +265,6 @@ export function apply(ctx: Context, config: Config) {
         .limit(config.maxRank)
         .execute()
       if (!rows.length) return reply(session, `⚠️ 排行榜还空着。${line()}`)
-      return picture(session, ranking(rows))
+      return picture(session, ranking(rows, totalShips, session.userId))
     })
 }
