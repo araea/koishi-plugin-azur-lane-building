@@ -1,4 +1,5 @@
 import { Random } from 'koishi'
+import { lch } from './m3'
 
 export enum BuildType {
   Light = '轻型舰建造',
@@ -8,14 +9,34 @@ export enum BuildType {
 
 export type RarityKey = 'Legend' | 'SuperRare' | 'Elite' | 'Rare' | 'Normal'
 
+/**
+ * 稀有度的色相与彩度，全插件唯一的一份。
+ *
+ * 色相沿用游戏里的约定（传奇粉、超稀金、精锐紫、稀有蓝、普通灰），玩家认得出；
+ * 色调与彩度则交给设计系统，由 `lch()` 现算——深色卡片和浅色表格各取所需的色调，
+ * 但同一个稀有度在两处永远是同一支色相。
+ */
+export const RARITY_SOURCE: Record<RarityKey, { hue: number; chroma: number }> = {
+  Legend: { hue: 340, chroma: 48 },
+  SuperRare: { hue: 88, chroma: 52 },
+  Elite: { hue: 300, chroma: 44 },
+  Rare: { hue: 240, chroma: 44 },
+  Normal: { hue: 250, chroma: 8 },
+}
+
 /** 稀有度从高到低，抽卡时按这个顺序累加概率。 */
-export const RARITIES: { key: RarityKey; name: string; textColor: string; color: string }[] = [
-  { key: 'Legend', name: '海上传奇', textColor: '#ee494c', color: 'linear-gradient(135deg, #59ae6a, #48ae96, #60d9ec, #65a5d5, #9491e0, #c382a4)' },
-  { key: 'SuperRare', name: '超稀有', textColor: '#c90', color: '#f9f593' },
-  { key: 'Elite', name: '精锐', textColor: '#8000ff', color: '#ae90ef' },
-  { key: 'Rare', name: '稀有', textColor: '#3b8bff', color: '#1bb7eb' },
-  { key: 'Normal', name: '普通', textColor: '#808080', color: '#dbdcdf' },
-]
+export const RARITIES: { key: RarityKey; name: string; textColor: string; color: string }[] = (
+  [
+    ['Legend', '海上传奇'],
+    ['SuperRare', '超稀有'],
+    ['Elite', '精锐'],
+    ['Rare', '稀有'],
+    ['Normal', '普通'],
+  ] as [RarityKey, string][]
+).map(([key, name]) => {
+  const { hue, chroma } = RARITY_SOURCE[key]
+  return { key, name, textColor: lch(46, chroma, hue), color: lch(72, chroma, hue) }
+})
 
 export const RARITY_NAMES = RARITIES.map((item) => item.name)
 

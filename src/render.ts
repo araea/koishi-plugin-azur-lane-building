@@ -1,7 +1,8 @@
 import { Context, h } from 'koishi'
 import {} from 'koishi-plugin-puppeteer'
+import { ELEVATION, FONT_STACK, lch, MEDAL, scheme, SHAPE } from './m3'
 import { shipData } from './data'
-import { BuildType, parsePool, RARITIES, RarityKey, ShipRareList } from './pools'
+import { BuildType, parsePool, RARITIES, RARITY_SOURCE, RarityKey, ShipRareList } from './pools'
 import { FALLBACK_AVATAR } from './wiki'
 
 export interface BuildRecord {
@@ -41,6 +42,10 @@ export interface RankRow {
   lastCheckInTimestamp: Date
 }
 
+/** 碧蓝航线取海军蓝主调，暗色方案，和舰桥面板的气质一致。 */
+const HUE = 245
+const SCHEME = scheme(HUE, true)
+
 const escape = (text: string) => h.escape(String(text ?? ''))
 const avatarOf = (name: string) => shipData[name]?.src ?? FALLBACK_AVATAR
 const shortPool = (type: BuildType) => type.replace('舰建造', '')
@@ -48,14 +53,24 @@ const number = (value: number) => (value ?? 0).toLocaleString('zh-CN')
 const percent = (value: number) => `${(value * 100).toFixed(2)}%`
 const clamp = (value: number) => Math.max(0, Math.min(1, value || 0))
 
-/** 深色底上的稀有度配色：ink 文字、halo 填充、edge 描边、line 高亮。 */
-const RARITY_STYLE: Record<RarityKey, { ink: string; halo: string; edge: string; line: string }> = {
-  Legend: { ink: '#ffd6f0', halo: 'rgba(255,154,213,.14)', edge: 'rgba(255,154,213,.42)', line: '#ff9ad5' },
-  SuperRare: { ink: '#ffe98a', halo: 'rgba(249,217,73,.13)', edge: 'rgba(249,217,73,.40)', line: '#f9d949' },
-  Elite: { ink: '#cdb4ff', halo: 'rgba(169,139,240,.14)', edge: 'rgba(169,139,240,.42)', line: '#a98bf0' },
-  Rare: { ink: '#93defb', halo: 'rgba(63,182,234,.13)', edge: 'rgba(63,182,234,.40)', line: '#3fb6ea' },
-  Normal: { ink: '#c6cdd6', halo: 'rgba(160,172,186,.12)', edge: 'rgba(160,172,186,.34)', line: '#93a0ad' },
-}
+/**
+ * 稀有度在深色卡片上的四种取值：ink 文字、halo 填充、edge 描边、line 高亮。
+ *
+ * 色相取自 `RARITY_SOURCE`（与表格、文字输出同一份），色调则一律固定：
+ * 文字 84、高亮 70。于是五档并排时明度是齐的，「哪个更亮」不再暗示
+ * 「哪个更稀有」——稀有度该由色相说了算。
+ */
+const rarityStyle = ({ hue, chroma }: { hue: number; chroma: number }) => ({
+  ink: lch(84, Math.min(chroma, 28), hue),
+  halo: lch(70, chroma, hue) + '22',
+  edge: lch(70, chroma, hue) + '66',
+  line: lch(70, chroma, hue),
+})
+
+const RARITY_STYLE: Record<RarityKey, { ink: string; halo: string; edge: string; line: string }> =
+  Object.fromEntries(
+    Object.entries(RARITY_SOURCE).map(([key, source]) => [key, rarityStyle(source)]),
+  ) as Record<RarityKey, { ink: string; halo: string; edge: string; line: string }>
 
 /** 单发焦点位右侧的稀有度水印，只描边不填色，安静地压住大片留白。 */
 const RARITY_EN: Record<RarityKey, string> = {
@@ -77,7 +92,8 @@ const vars = (key: RarityKey) => {
   return `--ink:${style.ink};--halo:${style.halo};--edge:${style.edge};--line:${style.line}`
 }
 /** 金色是全局强调色，总计行、单发焦点等非稀有度语境统一用它。 */
-const GOLD_VARS = '--ink:#f6df9e;--halo:rgba(240,198,106,.14);--edge:rgba(240,198,106,.30);--line:#f0c66a'
+const ACCENT = rarityStyle({ hue: 85, chroma: 46 })
+const GOLD_VARS = `--ink:${ACCENT.ink};--halo:${ACCENT.halo};--edge:${ACCENT.edge};--line:${ACCENT.line}`
 
 const ICON = {
   anchor: '<path d="M12 7.6V21"/><circle cx="12" cy="5" r="2.6"/><path d="M5 13.5a7 7 0 0 0 14 0"/><path d="M8.4 11.4h7.2"/>',
@@ -107,10 +123,11 @@ body {
   margin: 0;
   padding: 22px;
   background: transparent;
-  color: #e9f2fb;
-  font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  color: ${SCHEME.onSurface};
+  font-family: ${FONT_STACK};
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  font-variant-numeric: tabular-nums;
 }
 
 /* 所有图片共用同一张「舰桥面板」：同宽、同圆角、同底色，风格自然统一。 */
@@ -118,39 +135,22 @@ body {
   position: relative;
   width: 900px;
   padding: 26px 32px 20px;
-  border-radius: 24px;
+  border-radius: ${SHAPE.extraLargeIncreased}px;
   overflow: hidden;
-  border: 1px solid rgba(150,205,245,.20);
-  background:
-    radial-gradient(780px 320px at 6% -14%, rgba(86,178,229,.28), rgba(86,178,229,0) 60%),
-    radial-gradient(700px 380px at 104% -8%, rgba(238,198,120,.15), rgba(238,198,120,0) 58%),
-    linear-gradient(158deg, #0a1728 0%, #10263c 46%, #0b1a2c 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), inset 0 0 60px rgba(6,14,24,.5);
+  background: ${SCHEME.surfaceContainer};
+  box-shadow: ${ELEVATION[2]};
 }
 
-/* 顶部细网格纹理，只留下淡淡的一层，避免喧宾夺主 */
-.card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
-  background-size: 32px 32px;
-  -webkit-mask-image: radial-gradient(120% 78% at 50% -10%, #000 0%, rgba(0,0,0,.35) 45%, transparent 78%);
-  mask-image: radial-gradient(120% 78% at 50% -10%, #000 0%, rgba(0,0,0,.35) 45%, transparent 78%);
-  pointer-events: none;
-}
-
-/* 顶边一道青金渐变细线，是四张图共同的「签名」 */
+/* 顶边一道主色细线，是四张图共同的「签名」 */
 .card::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 32px;
   top: 0;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(124,201,242,0), rgba(124,201,242,.6) 20%, rgba(240,198,106,.55) 66%, rgba(240,198,106,0));
+  width: 72px;
+  height: 4px;
+  border-radius: 0 0 ${SHAPE.extraSmall}px ${SHAPE.extraSmall}px;
+  background: ${SCHEME.primary};
   pointer-events: none;
 }
 
@@ -161,7 +161,7 @@ body {
   align-items: center;
   gap: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(150,205,245,.14);
+  border-bottom: 1px solid ${SCHEME.outlineVariant};
 }
 
 .hd-badge {
@@ -172,10 +172,10 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 14px;
-  color: #bfe6ff;
-  border: 1px solid rgba(150,215,250,.34);
-  background: linear-gradient(150deg, rgba(96,190,240,.30), rgba(96,190,240,.06));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 0 18px -6px rgba(120,205,255,.6);
+  color: ${SCHEME.onPrimaryContainer};
+  border: 1px solid ${SCHEME.primary};
+  background: ${SCHEME.primaryContainer};
+  box-shadow: none;
 }
 
 .hd-badge svg { width: 24px; height: 24px; }
@@ -189,21 +189,21 @@ body {
   font-size: 23px;
   font-weight: 700;
   letter-spacing: .5px;
-  color: #f2f8ff;
+  color: ${SCHEME.onSurface};
 }
 
 .hd-en {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 2.4px;
-  color: rgba(150,205,245,.55);
+  color: ${SCHEME.outline};
   text-transform: uppercase;
 }
 
 .hd-sub {
   margin-top: 5px;
   font-size: 13px;
-  color: rgba(200,224,246,.72);
+  color: ${SCHEME.onSurfaceVariant};
 }
 
 .hd-metrics { flex: none; display: flex; gap: 10px; }
@@ -213,15 +213,15 @@ body {
   padding: 8px 14px;
   text-align: center;
   border-radius: 13px;
-  border: 1px solid rgba(150,205,245,.16);
-  background: rgba(255,255,255,.05);
+  border: 1px solid ${SCHEME.outlineVariant};
+  background: ${SCHEME.surfaceContainerHigh};
 }
 
 .metric .mv {
   display: block;
   font-size: 19px;
   font-weight: 700;
-  color: #f4d98a;
+  color: ${ACCENT.ink};
   font-variant-numeric: tabular-nums;
 }
 
@@ -230,7 +230,7 @@ body {
   margin-top: 2px;
   font-size: 11px;
   letter-spacing: .6px;
-  color: rgba(196,220,242,.62);
+  color: ${SCHEME.onSurfaceVariant};
 }
 
 /* ── 战果分布：色片 + 一条按比例分段的细条 ─────────────── */
@@ -268,7 +268,7 @@ body {
   margin-top: 11px;
   border-radius: 999px;
   overflow: hidden;
-  background: rgba(255,255,255,.05);
+  background: ${SCHEME.surfaceContainerHigh};
 }
 
 .tally-bar i { min-width: 5px; border-radius: 999px; background: var(--line); opacity: .85; }
@@ -282,12 +282,12 @@ body {
   padding: 9px 9px 11px;
   border-radius: 15px;
   border: 1px solid var(--edge);
-  background: linear-gradient(170deg, rgba(255,255,255,.075), rgba(255,255,255,.028));
-  box-shadow: 0 6px 16px rgba(3,10,20,.34), inset 0 1px 0 rgba(255,255,255,.07);
+  background: ${SCHEME.surfaceContainerHigh};
+  box-shadow: ${ELEVATION[1]};
 }
 
 .ship.hi {
-  box-shadow: 0 6px 16px rgba(3,10,20,.34), 0 0 24px -8px var(--line), inset 0 1px 0 rgba(255,255,255,.09);
+  box-shadow: ${ELEVATION[2]}, 0 0 24px -8px var(--line);
 }
 
 .ship::before {
@@ -304,7 +304,7 @@ body {
 
 .ship.legend::before {
   opacity: 1;
-  background: linear-gradient(90deg, #59ae6a, #48ae96, #60d9ec, #65a5d5, #9491e0, #c382a4);
+  background: ${SCHEME.primary};
 }
 
 .ship-av {
@@ -313,7 +313,7 @@ body {
   aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: 11px;
-  background: radial-gradient(120% 90% at 50% 0%, var(--halo), rgba(255,255,255,.03));
+  background: var(--halo);
 }
 
 .ship-av img {
@@ -337,7 +337,7 @@ body {
   font-weight: 700;
   letter-spacing: .3px;
   text-align: center;
-  color: #f1f7ff;
+  color: ${SCHEME.onSurface};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -352,9 +352,9 @@ body {
   font-size: 11.5px;
 }
 
-.ship-meta i { width: 3px; height: 3px; border-radius: 50%; background: rgba(198,220,242,.3); }
+.ship-meta i { width: 3px; height: 3px; border-radius: 50%; background: ${SCHEME.outline}; }
 .ship-meta .rr { color: var(--ink); }
-.ship-meta .tm { color: rgba(198,220,242,.55); font-variant-numeric: tabular-nums; }
+.ship-meta .tm { color: ${SCHEME.outline}; font-variant-numeric: tabular-nums; }
 
 .idx {
   position: absolute;
@@ -363,8 +363,8 @@ body {
   padding: 2px 7px;
   border-radius: 999px;
   font-size: 10.5px;
-  color: rgba(233,244,255,.85);
-  background: rgba(8,18,30,.62);
+  color: ${SCHEME.onSurface};
+  background: ${SCHEME.scrim}a8;
   font-variant-numeric: tabular-nums;
 }
 
@@ -377,9 +377,9 @@ body {
   font-size: 10.5px;
   font-weight: 800;
   letter-spacing: .6px;
-  color: #3a1f00;
-  background: linear-gradient(140deg, #ffe9a8, #f0c65c);
-  box-shadow: 0 2px 8px rgba(240,198,92,.40);
+  color: ${SCHEME.surface};
+  background: ${ACCENT.line};
+  box-shadow: ${ELEVATION[1]};
 }
 
 /* ── 单发建造：横向焦点位，不留大片空白 ───────────────── */
@@ -394,8 +394,8 @@ body {
   padding: 20px 24px;
   border-radius: 20px;
   border: 1px solid var(--edge);
-  background: linear-gradient(110deg, var(--halo), rgba(255,255,255,.022) 62%);
-  box-shadow: 0 10px 30px rgba(3,10,20,.32), 0 0 40px -18px var(--line), inset 0 1px 0 rgba(255,255,255,.08);
+  background: var(--halo);
+  box-shadow: ${ELEVATION[3]}, 0 0 40px -18px var(--line);
 }
 
 .hero-mark {
@@ -420,7 +420,7 @@ body {
   overflow: hidden;
   border-radius: 16px;
   border: 1px solid var(--edge);
-  background: radial-gradient(120% 90% at 50% 0%, var(--halo), rgba(255,255,255,.03));
+  background: var(--halo);
 }
 
 .hero-av img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 14%; }
@@ -435,7 +435,7 @@ body {
 }
 
 .hero.legend .hero-av .bar {
-  background: linear-gradient(90deg, #59ae6a, #48ae96, #60d9ec, #65a5d5, #9491e0, #c382a4);
+  background: ${SCHEME.primary};
 }
 
 .hero-body { position: relative; flex: 1; min-width: 0; }
@@ -445,15 +445,15 @@ body {
   font-size: 34px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: #f6fbff;
+  color: ${SCHEME.onSurface};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: 0 2px 18px rgba(8,20,34,.6);
 }
 
-.hero-meta { display: flex; align-items: center; gap: 9px; font-size: 13px; color: rgba(200,224,246,.66); }
-.hero-meta i { width: 3px; height: 3px; border-radius: 50%; background: rgba(198,220,242,.3); }
+.hero-meta { display: flex; align-items: center; gap: 9px; font-size: 13px; color: ${SCHEME.onSurfaceVariant}; }
+.hero-meta i { width: 3px; height: 3px; border-radius: 50%; background: ${SCHEME.outline}; }
 .hero-meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .hero-flag {
@@ -464,9 +464,9 @@ body {
   font-size: 11.5px;
   font-weight: 800;
   letter-spacing: 1px;
-  color: #3a1f00;
-  background: linear-gradient(140deg, #ffe9a8, #f0c65c);
-  box-shadow: 0 3px 12px rgba(240,198,92,.4);
+  color: ${SCHEME.surface};
+  background: ${ACCENT.line};
+  box-shadow: ${ELEVATION[1]};
 }
 
 /* ── 概览面板：最常获得 / 收藏进度 ───────────────────── */
@@ -478,8 +478,8 @@ body {
   flex-direction: column;
   padding: 14px 18px 16px;
   border-radius: 18px;
-  border: 1px solid rgba(150,205,245,.16);
-  background: linear-gradient(120deg, rgba(255,255,255,.055), rgba(255,255,255,.02));
+  border: 1px solid ${SCHEME.outlineVariant};
+  background: ${SCHEME.surfaceContainerHigh};
 }
 
 .panel.gold { border-color: rgba(240,198,106,.26); background: linear-gradient(120deg, rgba(240,198,106,.13), rgba(255,255,255,.03)); }
@@ -506,7 +506,7 @@ body {
 .fav-name {
   font-size: 20px;
   font-weight: 700;
-  color: #fdf3d8;
+  color: ${ACCENT.ink};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -515,14 +515,14 @@ body {
 .fav-sub { margin-top: 3px; font-size: 11.5px; color: rgba(240,214,150,.6); font-variant-numeric: tabular-nums; }
 
 .fav-count { flex: none; text-align: right; }
-.fav-count b { font-size: 26px; color: #f4d98a; font-variant-numeric: tabular-nums; }
+.fav-count b { font-size: 26px; color: ${ACCENT.ink}; font-variant-numeric: tabular-nums; }
 .fav-count span { margin-left: 3px; font-size: 12px; color: rgba(240,214,150,.7); }
 
 .prog-top { margin-top: auto; padding-top: 12px; display: flex; align-items: baseline; gap: 9px; }
-.prog-top b { font-size: 26px; font-weight: 700; color: #a6e2ff; font-variant-numeric: tabular-nums; }
+.prog-top b { font-size: 26px; font-weight: 700; color: ${SCHEME.primary}; font-variant-numeric: tabular-nums; }
 .prog-top span { font-size: 12.5px; color: rgba(200,224,246,.6); font-variant-numeric: tabular-nums; }
 
-.prog-bar { margin-top: 12px; height: 9px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
+.prog-bar { margin-top: 12px; height: 9px; border-radius: 999px; background: ${SCHEME.surfaceContainerHighest}; overflow: hidden; }
 
 .prog-bar i {
   display: block;
@@ -566,17 +566,17 @@ body {
 .tbl td:first-child { text-align: left; border-radius: 11px 0 0 11px; }
 .tbl td:last-child { border-radius: 0 11px 11px 0; padding-right: 16px; }
 
-.tbl .c-tot { font-weight: 700; color: #f2f8ff; }
+.tbl .c-tot { font-weight: 700; color: ${SCHEME.onSurface}; }
 
 .tbl .c-share > div { display: flex; align-items: center; justify-content: flex-end; gap: 11px; }
 
-.sbar { width: 104px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.07); overflow: hidden; }
+.sbar { width: 104px; height: 7px; border-radius: 999px; background: ${SCHEME.surfaceContainerHighest}; overflow: hidden; }
 .sbar i { display: block; height: 100%; border-radius: 999px; background: var(--line); opacity: .75; }
 
 .c-share em { width: 48px; font-style: normal; font-size: 12.5px; color: var(--ink); }
 
-.tbl tr.sum td { color: #f6df9e; font-weight: 700; background: rgba(240,198,106,.10); }
-.tbl tr.sum .c-tot { color: #ffe9ae; }
+.tbl tr.sum td { color: ${ACCENT.ink}; font-weight: 700; background: ${ACCENT.halo}; }
+.tbl tr.sum .c-tot { color: ${ACCENT.ink}; }
 
 .chip {
   display: inline-flex;
@@ -612,7 +612,7 @@ body {
 
 .band-hd { display: flex; align-items: center; gap: 12px; margin-bottom: 11px; }
 .band-hd .olb { font-size: 12px; color: rgba(200,224,246,.5); }
-.band-hd .obar { width: 118px; height: 6px; border-radius: 999px; background: rgba(255,255,255,.07); overflow: hidden; }
+.band-hd .obar { width: 118px; height: 6px; border-radius: 999px; background: ${SCHEME.surfaceContainerHighest}; overflow: hidden; }
 .band-hd .obar i { display: block; height: 100%; border-radius: 999px; background: var(--line); opacity: .8; }
 .band-hd .odds { font-size: 12.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .band-hd .cnt { margin-left: auto; font-size: 12px; color: rgba(200,224,246,.5); font-variant-numeric: tabular-nums; }
@@ -626,7 +626,7 @@ body {
   padding: 4px 12px 4px 4px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,.07);
-  background: rgba(255,255,255,.05);
+  background: ${SCHEME.surfaceContainerHigh};
 }
 
 .ship-chip img {
@@ -688,9 +688,9 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.rk.t1 { color: #4a3000; background: linear-gradient(140deg, #ffe9a8, #edbe52); box-shadow: 0 2px 10px rgba(240,198,92,.4); }
-.rk.t2 { color: #2b3946; background: linear-gradient(140deg, #f2f7fc, #c3d3e2); box-shadow: 0 2px 10px rgba(210,226,242,.28); }
-.rk.t3 { color: #40230a; background: linear-gradient(140deg, #f4c795, #d99155); box-shadow: 0 2px 10px rgba(232,167,106,.3); }
+.rk.t1 { color: #fff; background: ${MEDAL.gold}; }
+.rk.t2 { color: #fff; background: ${MEDAL.silver}; }
+.rk.t3 { color: #fff; background: ${MEDAL.bronze}; }
 
 .who { min-width: 0; }
 
@@ -698,7 +698,7 @@ body {
   display: block;
   font-size: 14.5px;
   font-weight: 600;
-  color: #eef6ff;
+  color: ${SCHEME.onSurface};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -713,7 +713,7 @@ body {
   border-radius: 999px;
   font-size: 10px;
   font-weight: 700;
-  color: #0b2033;
+  color: ${SCHEME.onPrimary};
   background: rgba(150,225,255,.85);
   vertical-align: 1px;
 }
@@ -729,9 +729,9 @@ body {
 
 .rank-row.t1 .rate i { background: linear-gradient(90deg, rgba(240,198,106,.45), rgba(255,226,150,.92)); }
 
-.pct { text-align: right; font-size: 13px; font-weight: 700; color: #dfeeff; font-variant-numeric: tabular-nums; }
+.pct { text-align: right; font-size: 13px; font-weight: 700; color: ${SCHEME.onSurface}; font-variant-numeric: tabular-nums; }
 .cube, .when { text-align: right; font-variant-numeric: tabular-nums; }
-.cube { font-size: 13.5px; color: #f4d98a; }
+.cube { font-size: 13.5px; color: ${ACCENT.ink}; }
 .when { font-size: 12px; color: rgba(190,215,238,.5); }
 
 /* ── 页脚 ───────────────────────────────────────────── */
