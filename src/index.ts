@@ -21,7 +21,7 @@ export const usage = `## 使用
 | \`alb.抽轻型池 / 抽重型池 / 抽特型池 [次数]\` | 建造 |
 | \`alb.轻型池 / 重型池 / 特型池\` | 查看池内容与出货率 |
 | \`alb.抽卡记录\` | 个人建造统计 |
-| \`alb.收藏率排行榜\` | 收藏率排行 |
+| \`alb.收藏率排行榜\` | 收藏率排行榜 |
 
 ## 出货率
 
@@ -107,7 +107,7 @@ export function apply(ctx: Context, config: Config) {
       return reply(session, caption ? [caption, h.image(buffer, 'image/png')] : h.image(buffer, 'image/png'))
     } catch (error) {
       logger.error('生成图片失败：%s', error.message)
-      return reply(session, '❌ 生成图片失败，请查看后台日志。')
+      return reply(session, '❌ 图片没能生成\n详细原因见后台日志，稍后再试一次。')
     }
   }
 
@@ -158,7 +158,7 @@ export function apply(ctx: Context, config: Config) {
       }
 
       if (isSameDay(now, record.lastCheckInTimestamp)) {
-        return reply(session, `⚠️ 今天已经领过每日魔方了。${line()}`)
+        return reply(session, `💡 今天的魔方已经领过了，明日再来。${line()}`)
       }
       const cube = record.cube + reward
       await ctx.database.set('azur_lane_building', { id: record.id }, {
@@ -173,14 +173,14 @@ export function apply(ctx: Context, config: Config) {
     cmd.subcommand(`.抽${entry.name}池 [times:posint]`, `进行${entry.name}舰建造`)
       .action(async ({ session }, times = 1) => {
         if (times > config.maxBuildPerCommand) {
-          return reply(session, `⚠️ 单次建造不能超过 ${config.maxBuildPerCommand} 发。`)
+          return reply(session, `⚠️ 单次建造最多 ${config.maxBuildPerCommand} 发\n分几条指令，或把次数改小一些。`)
         }
         const record = await profile(session.userId)
-        if (!record) return reply(session, `⚠️ 请先发送「alb.每日魔方」激活账号。${line()}`)
+        if (!record) return reply(session, `💡 账号还没有激活\n发送「alb.每日魔方」领一份魔方，港区就开张了。${line()}`)
 
         const need = entry.cost * times
         if (record.cube < need) {
-          return reply(session, `⚠️ 魔方不足。当前 ${record.cube}，需要 ${need}。${line()}`)
+          return reply(session, `⚠️ 魔方不足\n这一次需要 ${need}，当前 ${record.cube}。\n发送「alb.每日魔方」领取今日份。${line()}`)
         }
 
         const stats: BuildStats = { ...emptyStats(), ...record.buildStats }
@@ -234,11 +234,11 @@ export function apply(ctx: Context, config: Config) {
       .action(({ session }) => picture(session, poolTable(entry.pool as ShipRareList, entry.odds as Record<RarityKey, number>, entry.type, entry.cost)))
   }
 
-  cmd.subcommand('.抽卡记录', '查看自己的建造统计')
+  cmd.subcommand('.抽卡记录', '查看个人建造统计')
     .action(async ({ session }) => {
       const record = await profile(session.userId)
-      if (!record) return reply(session, `⚠️ 请先发送「alb.每日魔方」激活账号。${line()}`)
-      if (!record.buildCount) return reply(session, '⚠️ 还没有进行过建造。')
+      if (!record) return reply(session, `💡 账号还没有激活\n发送「alb.每日魔方」领一份魔方，港区就开张了。${line()}`)
+      if (!record.buildCount) return reply(session, '📋 还没有建造记录\n开过第一发之后，这里会记下出货分布与收藏进度。\n发送「alb.抽轻型池」试一发。')
 
       const [favouriteName, favouriteTimes] = Object.entries(record.shipCounts ?? {})
         .reduce((best, entry) => entry[1] > best[1] ? entry : best, ['无', 0])
@@ -264,7 +264,7 @@ export function apply(ctx: Context, config: Config) {
         .orderBy('collectionRate', 'desc')
         .limit(config.maxRank)
         .execute()
-      if (!rows.length) return reply(session, `⚠️ 排行榜还空着。${line()}`)
+      if (!rows.length) return reply(session, `📋 排行榜还空着\n第一位开始建造的指挥官，名字会写在这里。${line()}`)
       return picture(session, ranking(rows, totalShips, session.userId))
     })
 }
