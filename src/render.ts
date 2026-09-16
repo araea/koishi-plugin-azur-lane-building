@@ -1,6 +1,6 @@
 import { Context, h } from 'koishi'
 import {} from 'koishi-plugin-puppeteer'
-import { baseline, FONT_STACK, lch, MEDAL, MONO_STACK, scheme } from './m3'
+import { baseline, components, FONT_STACK, lch, MEDAL, MONO_STACK, scheme } from './m3'
 import { shipData } from './data'
 import { BuildType, parsePool, RARITIES, RARITY_SOURCE, RarityKey, ShipRareList } from './pools'
 import { FALLBACK_AVATAR } from './wiki'
@@ -124,8 +124,11 @@ const shortDate = (value: Date | number) => {
  */
 const NUM_FONT = `${MONO_STACK},${FONT_STACK}`
 
+/** 名次徽章前三名借设计系统的金银铜档，其余退回 m3-badge 的中性档。 */
+const MEDAL_CLASS = ['m3-badge--gold', 'm3-badge--silver', 'm3-badge--bronze']
+
 const STYLE = `
-${baseline(SCHEME)}
+${baseline(SCHEME)}${components()}
 /* 截图对象是 .card，底色透明即可；其余排版重置由 baseline 给。 */
 body { padding: 22px; background: transparent; }
 
@@ -684,10 +687,15 @@ body { padding: 22px; background: transparent; }
 .rank-row.t2 { border-color: ${MEDAL.silver}3d; background: linear-gradient(100deg, ${MEDAL.silver}1f, ${MEDAL.silver}0a); }
 .rank-row.t3 { border-color: ${MEDAL.bronze}42; background: linear-gradient(100deg, ${MEDAL.bronze}21, ${MEDAL.bronze}0a); }
 
+/*
+ * 名次徽章降级到 m3-badge：底色与字色（前三名金银铜、其余中性档）由组件给，
+ * 这里只把几何钉回原本的 30px 方块——组件默认 28px、左右各 8px 内边距。
+ */
 .rk {
   justify-self: center;
   width: 30px;
   height: 30px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -695,14 +703,8 @@ body { padding: 22px; background: transparent; }
   font-family: ${NUM_FONT};
   font-size: var(--md-sys-typescale-label-medium-size);
   font-weight: 600;
-  color: var(--md-sys-color-on-surface-variant);
   font-variant-numeric: tabular-nums;
 }
-
-/* 金银铜都是中色调，白字是设计系统给这三色的固定搭配（同 m3-badge--gold）。 */
-.rk.t1 { color: #fff; background: ${MEDAL.gold}; }
-.rk.t2 { color: #fff; background: ${MEDAL.silver}; }
-.rk.t3 { color: #fff; background: ${MEDAL.bronze}; }
 
 .who { min-width: 0; }
 
@@ -959,7 +961,7 @@ export function ranking(rows: RankRow[], totalShips = 0, selfId?: string) {
     const rate = clamp(item.collectionRate)
     const owned = totalShips ? Math.round(rate * totalShips) : 0
     return `<div class="rank-row${tier}">
-      <div class="rk${tier}">${index + 1}</div>
+      <div class="rk m3-badge${index < 3 ? ` ${MEDAL_CLASS[index]}` : ''}">${index + 1}</div>
       <div class="who">
         <span class="nm">${escape(item.username)}${selfId && item.userId === selfId ? '<span class="me">你</span>' : ''}</span>
         ${totalShips ? `<span class="sub">已收集 ${number(owned)} / ${number(totalShips)} 艘</span>` : ''}
