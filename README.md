@@ -19,7 +19,7 @@ yarn add koishi-plugin-azur-lane-building
 | `alb.抽重型池 [次数]` | 建造 |
 | `alb.抽特型池 [次数]` | 建造 |
 | `alb.轻型池` / `alb.重型池` / `alb.特型池` | 池内容与出货率 |
-| `alb.抽卡记录` | 个人建造统计 |
+| `alb.建造记录` | 个人建造统计 |
 | `alb.收藏率排行榜` | 收藏率排行 |
 
 出货率：
