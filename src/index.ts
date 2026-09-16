@@ -91,7 +91,7 @@ export function apply(ctx: Context, config: Config) {
   const totalShips = countShips([config.LightShipBuilding, config.HeavyShipBuilding, config.SpecialShipBuilding])
 
   function line() {
-    return config.enableShipLines ? `\n\n“${wiki.shipLine()}”` : ''
+    return config.enableShipLines ? `\n\n${wiki.shipLine()}` : ''
   }
 
   function reply(session: Session, content: h.Fragment): h.Fragment {
@@ -101,14 +101,65 @@ export function apply(ctx: Context, config: Config) {
     return [...prefix, ...h.normalize(content)]
   }
 
-  async function picture(session: Session, html: string, caption?: string) {
+  async function picture(session: Session, html: string, caption?: string, text?: string) {
     try {
       const buffer = await screenshot(ctx, html)
       return reply(session, caption ? [caption, h.image(buffer, 'image/png')] : h.image(buffer, 'image/png'))
     } catch (error) {
       logger.error('生成图片失败：%s', error.message)
-      return reply(session, '❌ 图片没能生成\n详细原因见后台日志，稍后再试一次。')
+      // 渲染不可用时安静回退到等价文本，不回一句报错
+      return reply(session, text ?? '❌ 图片没能生成\n详细原因见后台日志，稍后再试一次。')
     }
+  }
+
+  /** 池内容的文本形态，与图上的稀有度、出货率、舰名一一对应。 */
+  function poolText(entry: { name: string; cost: number; pool: ShipRareList; odds: Record<RarityKey, number> }): string {
+    const lines = [`📋 ${entry.name}池 · 每发 ${entry.cost} 魔方`]
+    for (const rarity of RARITIES) {
+      const odds = entry.odds[rarity.key]
+      if (!odds) continue
+      const ships = parsePool(entry.pool?.[rarity.key] ?? '')
+      lines.push(`${rarity.name} ${odds}%${ships.length ? ` · ${ships.join(' / ')}` : ''}`)
+    }
+    return lines.join('\n')
+  }
+
+  /** 建造结果的文本形态：每一发的稀有度与舰名，逐条列出。 */
+  function buildText(records: BuildRecord[], info: { name: string; times: number; cost: number; cube: number }): string {
+    const rarityOf = new Map(RARITIES.map((item) => [item.key, item.name]))
+    const lines = [`✅ ${info.times} 发${info.name}建造完成（消耗 ${info.cost} 魔方，剩余 ${info.cube}）`]
+    for (const record of records) {
+      lines.push(`第 ${record.index} 发 ${rarityOf.get(record.rarityKey) ?? ''} ${record.shipName}`)
+    }
+    return lines.join('\n')
+  }
+
+  /** 建造记录的文本形态。 */
+  function statsText(record: {
+    buildStats: BuildStats
+    buildCount: number
+    cube: number
+    collectionRate?: number
+  }, info: { owned: number; totalShips: number }): string {
+    const lines = [
+      '📋 建造记录',
+      `收藏率 ${((record.collectionRate ?? 0) * 100).toFixed(1)}%（${info.owned}/${info.totalShips}）`,
+      `魔方 ${record.cube} · 累计 ${record.buildCount} 发`,
+    ]
+    for (const rarity of RARITIES) {
+      const row = record.buildStats?.[rarity.name]
+      if (row?.total) lines.push(`${rarity.name} ${row.total} 次`)
+    }
+    return lines.join('\n')
+  }
+
+  /** 收藏率排行榜的文本形态。 */
+  function rankText(rows: { username?: string; collectionRate?: number }[]): string {
+    const lines = [`📋 收藏率排行榜 · 前 ${rows.length} 位`]
+    rows.forEach((row, index) => {
+      lines.push(`${index + 1}. ${row.username || '无名氏'} ${((row.collectionRate ?? 0) * 100).toFixed(1)}%`)
+    })
+    return lines.join('\n')
   }
 
   /** 取用户档案；顺带把旧版的逐发流水折叠成计数（只做一次）。 */
@@ -134,39 +185,53 @@ export function apply(ctx: Context, config: Config) {
   const cmd = ctx.command('alb', '碧蓝航线建造模拟器')
     .action(({ session }) => session.execute('help alb'))
 
-  cmd.subcommand('.每日魔方', '领取每日魔方')
+  /** 建造与签到都读改写同一份港区档案，按用户串行。 */
+  const busy = new Set<string>()
+
+  cmd.subcommand('.每日魔方', '领取今日份魔方')
     .action(async ({ session }) => {
-      const now = new Date()
-      const reward = Random.int(
-        Math.min(config.dayMinCube, config.dayMaxCube),
-        Math.max(config.dayMinCube, config.dayMaxCube) + 1)
-      const record = await profile(session.userId)
+      if (busy.has(session.userId)) return reply(session, '⏳ 上一次的操作还在处理\n稍等再发一次。')
+      busy.add(session.userId)
+      try {
+        const now = new Date()
+        const reward = Random.int(
+          Math.min(config.dayMinCube, config.dayMaxCube),
+          Math.max(config.dayMinCube, config.dayMaxCube) + 1)
+        const record = await profile(session.userId)
 
-      if (!record) {
-        await ctx.database.create('azur_lane_building', {
-          userId: session.userId,
+        if (!record) {
+          await ctx.database.create('azur_lane_building', {
+            userId: session.userId,
+            username: session.username,
+            cube: reward,
+            lastCheckInTimestamp: now,
+            collectionRate: 0,
+            buildCount: 0,
+            shipCounts: {},
+            buildStats: emptyStats(),
+            buildHistory: [],
+          })
+          return reply(session, `✅ 账号已激活，到账 ${reward} 魔方。${line()}`)
+        }
+
+        if (isSameDay(now, record.lastCheckInTimestamp)) {
+          const next = new Date(now)
+          next.setHours(24, 0, 0, 0)
+          const left = Math.max(0, Math.ceil((next.getTime() - now.getTime()) / 60000))
+          const hours = Math.floor(left / 60)
+          const minutes = left % 60
+          return reply(session, `💡 今天的魔方已经领过了\n跨零点后重置，还要等 ${hours} 小时 ${minutes} 分。\n发送「alb.抽轻型池」先用现有魔方建造。${line()}`)
+        }
+        const cube = record.cube + reward
+        await ctx.database.set('azur_lane_building', { id: record.id }, {
           username: session.username,
-          cube: reward,
+          cube,
           lastCheckInTimestamp: now,
-          collectionRate: 0,
-          buildCount: 0,
-          shipCounts: {},
-          buildStats: emptyStats(),
-          buildHistory: [],
         })
-        return reply(session, `✅ 账号已激活，到账 ${reward} 魔方。${line()}`)
+        return reply(session, `✅ 领取 ${reward} 魔方成功。当前库存：${cube}${line()}`)
+      } finally {
+        busy.delete(session.userId)
       }
-
-      if (isSameDay(now, record.lastCheckInTimestamp)) {
-        return reply(session, `💡 今天的魔方已经领过了，明日再来。${line()}`)
-      }
-      const cube = record.cube + reward
-      await ctx.database.set('azur_lane_building', { id: record.id }, {
-        username: session.username,
-        cube,
-        lastCheckInTimestamp: now,
-      })
-      return reply(session, `✅ 领取 ${reward} 魔方成功。当前库存：${cube}${line()}`)
     })
 
   for (const [key, entry] of Object.entries(POOLS)) {
@@ -175,63 +240,75 @@ export function apply(ctx: Context, config: Config) {
         if (times > config.maxBuildPerCommand) {
           return reply(session, `⚠️ 单次建造最多 ${config.maxBuildPerCommand} 发\n分几条指令，或把次数改小一些。`)
         }
-        const record = await profile(session.userId)
-        if (!record) return reply(session, `💡 账号还没有激活\n发送「alb.每日魔方」领一份魔方，港区就开张了。${line()}`)
+        if (busy.has(session.userId)) return reply(session, '⏳ 上一次的操作还在处理\n稍等再发一次。')
+        busy.add(session.userId)
+        try {
+          const record = await profile(session.userId)
+          if (!record) return reply(session, `💡 账号还没有激活\n发送「alb.每日魔方」领一份魔方，港区就开张了。${line()}`)
 
-        const need = entry.cost * times
-        if (record.cube < need) {
-          return reply(session, `⚠️ 魔方不足\n这一次需要 ${need}，当前 ${record.cube}。\n发送「alb.每日魔方」领取今日份。${line()}`)
-        }
+          const need = entry.cost * times
+          if (record.cube < need) {
+            return reply(session, `⚠️ 魔方不足\n这一次需要 ${need}，当前 ${record.cube}。\n发送「alb.每日魔方」领取今日份。${line()}`)
+          }
 
-        const stats: BuildStats = { ...emptyStats(), ...record.buildStats }
-        const counts = { ...(record.shipCounts ?? {}) }
-        const records: BuildRecord[] = []
+          const stats: BuildStats = { ...emptyStats(), ...record.buildStats }
+          const counts = { ...(record.shipCounts ?? {}) }
+          const records: BuildRecord[] = []
 
-        for (let i = 0; i < times; i++) {
-          const rarity = rollRarity(entry.odds)
-          const ships = parsePool(entry.pool[rarity.key])
-          const shipName = ships.length ? Random.pick(ships) : rarity.name
+          for (let i = 0; i < times; i++) {
+            const rarity = rollRarity(entry.odds)
+            const ships = parsePool(entry.pool[rarity.key])
+            const shipName = ships.length ? Random.pick(ships) : rarity.name
 
-          stats[rarity.name] ??= emptyRow()
-          stats[rarity.name][entry.type]++
-          stats[rarity.name].total++
-          stats.total[entry.type]++
-          stats.total.total++
+            stats[rarity.name] ??= emptyRow()
+            stats[rarity.name][entry.type]++
+            stats[rarity.name].total++
+            stats.total[entry.type]++
+            stats.total.total++
 
-          counts[shipName] = (counts[shipName] ?? 0) + 1
-          records.push({
-            index: record.buildCount + i + 1,
-            buildType: entry.type,
-            rarityKey: rarity.key,
-            shipName,
-            times: counts[shipName],
+            counts[shipName] = (counts[shipName] ?? 0) + 1
+            records.push({
+              index: record.buildCount + i + 1,
+              buildType: entry.type,
+              rarityKey: rarity.key,
+              shipName,
+              times: counts[shipName],
+            })
+          }
+
+          const cube = record.cube - need
+          const buildCount = record.buildCount + times
+          const owned = Object.keys(counts).length
+          await ctx.database.set('azur_lane_building', { id: record.id }, {
+            username: session.username,
+            cube,
+            buildCount,
+            shipCounts: counts,
+            buildStats: stats,
+            collectionRate: totalShips ? owned / totalShips : 0,
           })
+
+          return picture(session, buildResult(records, {
+            poolName: entry.name,
+            times,
+            cost: need,
+            cube,
+            username: session.username,
+            buildCount,
+          }), `✅ ${times} 发${entry.name}建造完成（消耗 ${need} 魔方，剩余 ${cube}）\n`,
+            buildText(records, { name: entry.name, times, cost: need, cube }))
+        } finally {
+          busy.delete(session.userId)
         }
-
-        const cube = record.cube - need
-        const buildCount = record.buildCount + times
-        const owned = Object.keys(counts).length
-        await ctx.database.set('azur_lane_building', { id: record.id }, {
-          username: session.username,
-          cube,
-          buildCount,
-          shipCounts: counts,
-          buildStats: stats,
-          collectionRate: totalShips ? owned / totalShips : 0,
-        })
-
-        return picture(session, buildResult(records, {
-          poolName: entry.name,
-          times,
-          cost: need,
-          cube,
-          username: session.username,
-          buildCount,
-        }), `✅ ${times} 发${entry.name}建造完成（消耗 ${need} 魔方，剩余 ${cube}）\n`)
       })
 
-    cmd.subcommand(`.${entry.name}池`, `查看${entry.name}舰建造池`)
-      .action(({ session }) => picture(session, poolTable(entry.pool as ShipRareList, entry.odds as Record<RarityKey, number>, entry.type, entry.cost)))
+    cmd.subcommand(`.${entry.name}池`, '查看可造舰船与出货率')
+      .action(({ session }) => picture(
+        session,
+        poolTable(entry.pool as ShipRareList, entry.odds as Record<RarityKey, number>, entry.type, entry.cost),
+        undefined,
+        poolText({ name: entry.name, cost: entry.cost, pool: entry.pool as ShipRareList, odds: entry.odds }),
+      ))
   }
 
   cmd.subcommand('.建造记录', '查看个人建造统计')
@@ -254,17 +331,19 @@ export function apply(ctx: Context, config: Config) {
         collectionRate: record.collectionRate ?? 0,
         owned,
         totalShips,
-      }))
+      }), undefined, statsText(record, { owned, totalShips }))
     })
 
-  cmd.subcommand('.收藏率排行榜', '查看收藏率排行榜')
+  cmd.subcommand('.收藏率排行榜', '查看收藏进度排名')
     .action(async ({ session }) => {
       const rows = await ctx.database
         .select('azur_lane_building')
         .orderBy('collectionRate', 'desc')
         .limit(config.maxRank)
         .execute()
-      if (!rows.length) return reply(session, `📋 排行榜还空着\n第一位开始建造的指挥官，名字会写在这里。${line()}`)
-      return picture(session, ranking(rows, totalShips, session.userId))
+      if (!rows.length) {
+        return reply(session, `📋 排行榜还空着\n第一位开始建造的指挥官，名字会写在这里。\n发送「alb.抽轻型池」开一发。${line()}`)
+      }
+      return picture(session, ranking(rows, totalShips, session.userId), undefined, rankText(rows))
     })
 }
