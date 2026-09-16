@@ -1,6 +1,6 @@
 import { Context, h } from 'koishi'
 import {} from 'koishi-plugin-puppeteer'
-import { ELEVATION, FONT_STACK, lch, MEDAL, scheme, SHAPE } from './m3'
+import { baseline, FONT_STACK, lch, MEDAL, MONO_STACK, scheme } from './m3'
 import { shipData } from './data'
 import { BuildType, parsePool, RARITIES, RARITY_SOURCE, RarityKey, ShipRareList } from './pools'
 import { FALLBACK_AVATAR } from './wiki'
@@ -81,7 +81,7 @@ const RARITY_EN: Record<RarityKey, string> = {
   Normal: 'NORMAL',
 }
 
-/** 海上传奇与超稀有值得被一眼看见，卡片额外加一层辉光。 */
+/** 海上传奇与超稀有值得被一眼看见，卡片抬高一档高度。 */
 const HIGHLIGHT: RarityKey[] = ['Legend', 'SuperRare']
 
 const styleOf = (key: RarityKey) => RARITY_STYLE[key] ?? RARITY_STYLE.Normal
@@ -91,9 +91,11 @@ const vars = (key: RarityKey) => {
   const style = styleOf(key)
   return `--ink:${style.ink};--halo:${style.halo};--edge:${style.edge};--line:${style.line}`
 }
-/** 金色是全局强调色，总计行、单发焦点等非稀有度语境统一用它。 */
-const ACCENT = rarityStyle({ hue: 85, chroma: 46 })
-const GOLD_VARS = `--ink:${ACCENT.ink};--halo:${ACCENT.halo};--edge:${ACCENT.edge};--line:${ACCENT.line}`
+/*
+ * 非稀有度语境的强调（总计行、单发焦点、统计数值）一律走配色方案的主色，
+ * 不再另立一支本插件专属的金色强调色——同一个群里前后脚出现的几张图，
+ * 强调色得是同一支。名次的金银铜仍走 MEDAL，那是固定语义。
+ */
 
 const ICON = {
   anchor: '<path d="M12 7.6V21"/><circle cx="12" cy="5" r="2.6"/><path d="M5 13.5a7 7 0 0 0 14 0"/><path d="M8.4 11.4h7.2"/>',
@@ -116,29 +118,26 @@ const shortDate = (value: Date | number) => {
   return `${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
-const STYLE = `
-*, *::before, *::after { box-sizing: border-box; }
+/**
+ * 要对齐的读数（次数、名次、占比、魔方数、日期）走等宽栈。等宽栈里没有汉字，
+ * 把正文栈接在后面，读数里夹着的「第」「次」「艘」才不掉队。
+ */
+const NUM_FONT = `${MONO_STACK},${FONT_STACK}`
 
-body {
-  margin: 0;
-  padding: 22px;
-  background: transparent;
-  color: ${SCHEME.onSurface};
-  font-family: ${FONT_STACK};
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  font-variant-numeric: tabular-nums;
-}
+const STYLE = `
+${baseline(SCHEME)}
+/* 截图对象是 .card，底色透明即可；其余排版重置由 baseline 给。 */
+body { padding: 22px; background: transparent; }
 
 /* 所有图片共用同一张「舰桥面板」：同宽、同圆角、同底色，风格自然统一。 */
 .card {
   position: relative;
   width: 900px;
   padding: 26px 32px 20px;
-  border-radius: ${SHAPE.extraLargeIncreased}px;
+  border-radius: var(--md-sys-shape-corner-extra-large-increased);
   overflow: hidden;
-  background: ${SCHEME.surfaceContainer};
-  box-shadow: ${ELEVATION[2]};
+  background: var(--md-sys-color-surface-container);
+  box-shadow: var(--md-sys-elevation-level2);
 }
 
 /* 顶边一道主色细线，是四张图共同的「签名」 */
@@ -149,8 +148,8 @@ body {
   top: 0;
   width: 72px;
   height: 4px;
-  border-radius: 0 0 ${SHAPE.extraSmall}px ${SHAPE.extraSmall}px;
-  background: ${SCHEME.primary};
+  border-radius: 0 0 var(--md-sys-shape-corner-extra-small) var(--md-sys-shape-corner-extra-small);
+  background: var(--md-sys-color-primary);
   pointer-events: none;
 }
 
@@ -161,7 +160,7 @@ body {
   align-items: center;
   gap: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid ${SCHEME.outlineVariant};
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
 }
 
 .hd-badge {
@@ -171,11 +170,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  color: ${SCHEME.onPrimaryContainer};
-  border: 1px solid ${SCHEME.primary};
-  background: ${SCHEME.primaryContainer};
-  box-shadow: none;
+  border-radius: var(--md-sys-shape-corner-large);
+  color: var(--md-sys-color-on-primary-container);
+  border: 1px solid var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container);
+  box-shadow: var(--md-sys-elevation-level0);
 }
 
 .hd-badge svg { width: 24px; height: 24px; }
@@ -186,24 +185,24 @@ body {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  font-size: 23px;
-  font-weight: 700;
+  font-size: var(--md-sys-typescale-headline-small-size);
+  font-weight: 600;
   letter-spacing: .5px;
-  color: ${SCHEME.onSurface};
+  color: var(--md-sys-color-on-surface);
 }
 
 .hd-en {
-  font-size: 11px;
+  font-size: var(--md-sys-typescale-label-small-size);
   font-weight: 600;
   letter-spacing: 2.4px;
-  color: ${SCHEME.onSurfaceVariant};
+  color: var(--md-sys-color-on-surface-variant);
   text-transform: uppercase;
 }
 
 .hd-sub {
   margin-top: 5px;
-  font-size: 13px;
-  color: ${SCHEME.onSurfaceVariant};
+  font-size: var(--md-sys-typescale-body-small-size);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .hd-metrics { flex: none; display: flex; gap: 10px; }
@@ -212,25 +211,26 @@ body {
   min-width: 92px;
   padding: 8px 14px;
   text-align: center;
-  border-radius: 13px;
-  border: 1px solid ${SCHEME.outlineVariant};
-  background: ${SCHEME.surfaceContainerHigh};
+  border-radius: var(--md-sys-shape-corner-medium);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-high);
 }
 
 .metric .mv {
   display: block;
-  font-size: 19px;
-  font-weight: 700;
-  color: ${ACCENT.ink};
+  font-family: ${NUM_FONT};
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: 600;
+  color: var(--md-sys-color-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .metric .ml {
   display: block;
   margin-top: 2px;
-  font-size: 11px;
+  font-size: var(--md-sys-typescale-label-small-size);
   letter-spacing: .6px;
-  color: ${SCHEME.onSurfaceVariant};
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 /* ── 战果分布：色片 + 一条按比例分段的细条 ─────────────── */
@@ -244,8 +244,8 @@ body {
   align-items: center;
   gap: 7px;
   padding: 5px 13px;
-  border-radius: 999px;
-  font-size: 12.5px;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: var(--md-sys-typescale-label-medium-size);
   color: var(--ink);
   background: var(--halo);
   border: 1px solid var(--edge);
@@ -254,24 +254,23 @@ body {
 .rare-chip .d {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: var(--md-sys-shape-corner-full);
   background: var(--line);
-  box-shadow: 0 0 8px var(--line);
 }
 
-.rare-chip b { font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.rare-chip b { font-family: ${NUM_FONT}; font-size: var(--md-sys-typescale-label-large-size); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .tally-bar {
   display: flex;
   gap: 3px;
   height: 6px;
   margin-top: 11px;
-  border-radius: 999px;
+  border-radius: var(--md-sys-shape-corner-full);
   overflow: hidden;
-  background: ${SCHEME.surfaceContainerHigh};
+  background: var(--md-sys-color-surface-container-high);
 }
 
-.tally-bar i { min-width: 5px; border-radius: 999px; background: var(--line); opacity: .85; }
+.tally-bar i { min-width: 5px; border-radius: var(--md-sys-shape-corner-full); background: var(--line); opacity: .85; }
 
 /* ── 舰娘卡 ─────────────────────────────────────────── */
 
@@ -280,14 +279,15 @@ body {
 .ship {
   position: relative;
   padding: 9px 9px 11px;
-  border-radius: 15px;
+  border-radius: var(--md-sys-shape-corner-large);
   border: 1px solid var(--edge);
-  background: ${SCHEME.surfaceContainerHigh};
-  box-shadow: ${ELEVATION[1]};
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: var(--md-sys-elevation-level1);
 }
 
+/* 焦点卡抬到第二档高度；原来那道稀有度辉光是自造阴影值，已并掉。 */
 .ship.hi {
-  box-shadow: ${ELEVATION[2]}, 0 0 24px -8px var(--line);
+  box-shadow: var(--md-sys-elevation-level2);
 }
 
 .ship::before {
@@ -297,14 +297,14 @@ body {
   right: 13px;
   top: 0;
   height: 2px;
-  border-radius: 0 0 3px 3px;
+  border-radius: 0 0 var(--md-sys-shape-corner-extra-small) var(--md-sys-shape-corner-extra-small);
   background: var(--line);
   opacity: .85;
 }
 
 .ship.legend::before {
   opacity: 1;
-  background: ${SCHEME.primary};
+  background: var(--md-sys-color-primary);
 }
 
 .ship-av {
@@ -312,7 +312,7 @@ body {
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  border-radius: 11px;
+  border-radius: var(--md-sys-shape-corner-medium);
   background: var(--halo);
 }
 
@@ -324,6 +324,7 @@ body {
   object-position: center 14%;
 }
 
+/* 真的压在头像上的半透明遮罩：为压住照片的亮部保留 rgba，取不到角色色。 */
 .ship-av::after {
   content: "";
   position: absolute;
@@ -333,11 +334,11 @@ body {
 
 .ship-name {
   margin-top: 9px;
-  font-size: 14.5px;
-  font-weight: 700;
+  font-size: var(--md-sys-typescale-title-small-size);
+  font-weight: 600;
   letter-spacing: .3px;
   text-align: center;
-  color: ${SCHEME.onSurface};
+  color: var(--md-sys-color-on-surface);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -349,21 +350,23 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: var(--md-sys-typescale-label-small-size);
 }
 
-.ship-meta i { width: 3px; height: 3px; border-radius: 50%; background: ${SCHEME.outline}; }
+.ship-meta i { width: 3px; height: 3px; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-outline); }
 .ship-meta .rr { color: var(--ink); }
-.ship-meta .tm { color: ${SCHEME.onSurfaceVariant}; font-variant-numeric: tabular-nums; }
+.ship-meta .tm { font-family: ${NUM_FONT}; color: var(--md-sys-color-on-surface-variant); font-variant-numeric: tabular-nums; }
 
+/* 序号压在头像上，遮罩取 scrim 角色色，尾部的 a8 是压在图片上的那层透明。 */
 .idx {
   position: absolute;
   top: 15px;
   left: 15px;
   padding: 2px 7px;
-  border-radius: 999px;
-  font-size: 10.5px;
-  color: ${SCHEME.onSurface};
+  border-radius: var(--md-sys-shape-corner-full);
+  font-family: ${NUM_FONT};
+  font-size: var(--md-sys-typescale-label-small-size);
+  color: var(--md-sys-color-on-surface);
   background: ${SCHEME.scrim}a8;
   font-variant-numeric: tabular-nums;
 }
@@ -373,13 +376,13 @@ body {
   top: 13px;
   right: 13px;
   padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 800;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: 600;
   letter-spacing: .6px;
-  color: ${SCHEME.surface};
-  background: ${ACCENT.line};
-  box-shadow: ${ELEVATION[1]};
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
+  box-shadow: var(--md-sys-elevation-level1);
 }
 
 /* ── 单发建造：横向焦点位，不留大片空白 ───────────────── */
@@ -392,18 +395,18 @@ body {
   gap: 24px;
   margin-top: 18px;
   padding: 20px 24px;
-  border-radius: 20px;
+  border-radius: var(--md-sys-shape-corner-large-increased);
   border: 1px solid var(--edge);
   background: var(--halo);
-  box-shadow: ${ELEVATION[3]}, 0 0 40px -18px var(--line);
+  box-shadow: var(--md-sys-elevation-level3);
 }
 
 .hero-mark {
   position: absolute;
   right: 16px;
   bottom: -12px;
-  font-size: 52px;
-  font-weight: 800;
+  font-size: var(--md-sys-typescale-display-large-size);
+  font-weight: 600;
   letter-spacing: 5px;
   color: transparent;
   -webkit-text-stroke: 1px var(--edge);
@@ -418,7 +421,7 @@ body {
   height: 188px;
   flex: none;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--md-sys-shape-corner-large);
   border: 1px solid var(--edge);
   background: var(--halo);
 }
@@ -435,38 +438,37 @@ body {
 }
 
 .hero.legend .hero-av .bar {
-  background: ${SCHEME.primary};
+  background: var(--md-sys-color-primary);
 }
 
 .hero-body { position: relative; flex: 1; min-width: 0; }
 
 .hero-name {
   margin: 12px 0 10px;
-  font-size: 34px;
-  font-weight: 700;
+  font-size: var(--md-sys-typescale-display-small-size);
+  font-weight: 600;
   letter-spacing: 1px;
-  color: ${SCHEME.onSurface};
+  color: var(--md-sys-color-on-surface);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 2px 18px rgba(8,20,34,.6);
 }
 
-.hero-meta { display: flex; align-items: center; gap: 9px; font-size: 13px; color: ${SCHEME.onSurfaceVariant}; }
-.hero-meta i { width: 3px; height: 3px; border-radius: 50%; background: ${SCHEME.outline}; }
-.hero-meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.hero-meta { display: flex; align-items: center; gap: 9px; font-size: var(--md-sys-typescale-body-small-size); color: var(--md-sys-color-on-surface-variant); }
+.hero-meta i { width: 3px; height: 3px; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-outline); }
+.hero-meta b { font-family: ${NUM_FONT}; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .hero-flag {
   flex: none;
   align-self: flex-start;
   padding: 4px 11px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 800;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: 600;
   letter-spacing: 1px;
-  color: ${SCHEME.surface};
-  background: ${ACCENT.line};
-  box-shadow: ${ELEVATION[1]};
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
+  box-shadow: var(--md-sys-elevation-level1);
 }
 
 /* ── 概览面板：最常获得 / 收藏进度 ───────────────────── */
@@ -477,15 +479,16 @@ body {
   display: flex;
   flex-direction: column;
   padding: 14px 18px 16px;
-  border-radius: 18px;
-  border: 1px solid ${SCHEME.outlineVariant};
-  background: ${SCHEME.surfaceContainerHigh};
+  border-radius: var(--md-sys-shape-corner-large);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-high);
 }
 
-.panel.gold { border-color: rgba(240,198,106,.26); background: linear-gradient(120deg, rgba(240,198,106,.13), rgba(255,255,255,.03)); }
+/* 「gold」是沿用下来的类名，语义是「强调面板」，色值改走主色容器。 */
+.panel.gold { border-color: var(--md-sys-color-primary); background: var(--md-sys-color-primary-container); }
 
-.panel-label { font-size: 11.5px; letter-spacing: 1.4px; color: rgba(200,224,246,.55); }
-.panel.gold .panel-label { color: rgba(240,214,150,.72); }
+.panel-label { font-size: var(--md-sys-typescale-label-small-size); letter-spacing: 1.4px; color: var(--md-sys-color-on-surface-variant); }
+.panel.gold .panel-label { color: var(--md-sys-color-on-primary-container); }
 
 .fav-row { margin-top: auto; padding-top: 12px; display: flex; align-items: center; gap: 14px; }
 
@@ -494,9 +497,9 @@ body {
   height: 54px;
   flex: none;
   overflow: hidden;
-  border-radius: 50%;
-  border: 2px solid rgba(240,198,106,.55);
-  box-shadow: 0 0 0 4px rgba(240,198,106,.10);
+  border-radius: var(--md-sys-shape-corner-full);
+  border: 2px solid var(--md-sys-color-primary);
+  box-shadow: var(--md-sys-elevation-level1);
 }
 
 .fav-av img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 10%; }
@@ -504,32 +507,31 @@ body {
 .fav-txt { flex: 1; min-width: 0; }
 
 .fav-name {
-  font-size: 20px;
-  font-weight: 700;
-  color: ${ACCENT.ink};
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: 600;
+  color: var(--md-sys-color-on-primary-container);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.fav-sub { margin-top: 3px; font-size: 11.5px; color: rgba(240,214,150,.6); font-variant-numeric: tabular-nums; }
+.fav-sub { margin-top: 3px; font-family: ${NUM_FONT}; font-size: var(--md-sys-typescale-label-small-size); color: var(--md-sys-color-on-surface-variant); font-variant-numeric: tabular-nums; }
 
 .fav-count { flex: none; text-align: right; }
-.fav-count b { font-size: 26px; color: ${ACCENT.ink}; font-variant-numeric: tabular-nums; }
-.fav-count span { margin-left: 3px; font-size: 12px; color: rgba(240,214,150,.7); }
+.fav-count b { font-family: ${NUM_FONT}; font-size: var(--md-sys-typescale-headline-medium-size); font-weight: 600; color: var(--md-sys-color-on-primary-container); font-variant-numeric: tabular-nums; }
+.fav-count span { margin-left: 3px; font-size: var(--md-sys-typescale-label-medium-size); color: var(--md-sys-color-on-surface-variant); }
 
 .prog-top { margin-top: auto; padding-top: 12px; display: flex; align-items: baseline; gap: 9px; }
-.prog-top b { font-size: 26px; font-weight: 700; color: ${SCHEME.primary}; font-variant-numeric: tabular-nums; }
-.prog-top span { font-size: 12.5px; color: rgba(200,224,246,.6); font-variant-numeric: tabular-nums; }
+.prog-top b { font-family: ${NUM_FONT}; font-size: var(--md-sys-typescale-headline-medium-size); font-weight: 600; color: var(--md-sys-color-primary); font-variant-numeric: tabular-nums; }
+.prog-top span { font-family: ${NUM_FONT}; font-size: var(--md-sys-typescale-body-small-size); color: var(--md-sys-color-on-surface-variant); font-variant-numeric: tabular-nums; }
 
-.prog-bar { margin-top: 12px; height: 9px; border-radius: 999px; background: ${SCHEME.surfaceContainerHighest}; overflow: hidden; }
+.prog-bar { margin-top: 12px; height: 9px; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-surface-container-highest); overflow: hidden; }
 
 .prog-bar i {
   display: block;
   height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(86,190,240,.5), rgba(160,230,255,.95));
-  box-shadow: 0 0 12px rgba(120,210,255,.35);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-primary);
 }
 
 /* ── 统计表 ─────────────────────────────────────────── */
@@ -544,10 +546,10 @@ body {
 .tbl th {
   padding: 0 14px 6px;
   text-align: right;
-  font-size: 12px;
+  font-size: var(--md-sys-typescale-label-medium-size);
   font-weight: 600;
   letter-spacing: .8px;
-  color: rgba(160,200,235,.62);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .tbl th:first-child { text-align: left; }
@@ -557,34 +559,38 @@ body {
 .tbl td {
   padding: 10px 14px;
   text-align: right;
-  font-size: 14px;
-  color: rgba(233,242,251,.86);
-  background: rgba(255,255,255,.038);
+  font-family: ${NUM_FONT};
+  font-size: var(--md-sys-typescale-body-medium-size);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-high);
   font-variant-numeric: tabular-nums;
 }
 
-.tbl td:first-child { text-align: left; border-radius: 11px 0 0 11px; }
-.tbl td:last-child { border-radius: 0 11px 11px 0; padding-right: 16px; }
+.tbl td:first-child { text-align: left; border-radius: var(--md-sys-shape-corner-medium) 0 0 var(--md-sys-shape-corner-medium); }
+.tbl td:last-child { border-radius: 0 var(--md-sys-shape-corner-medium) var(--md-sys-shape-corner-medium) 0; padding-right: 16px; }
 
-.tbl .c-tot { font-weight: 700; color: ${SCHEME.onSurface}; }
+.tbl .c-tot { font-weight: 600; color: var(--md-sys-color-on-surface); }
 
 .tbl .c-share > div { display: flex; align-items: center; justify-content: flex-end; gap: 11px; }
 
-.sbar { width: 104px; height: 7px; border-radius: 999px; background: ${SCHEME.surfaceContainerHighest}; overflow: hidden; }
-.sbar i { display: block; height: 100%; border-radius: 999px; background: var(--line); opacity: .75; }
+.sbar { width: 104px; height: 7px; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-surface-container-highest); overflow: hidden; }
+.sbar i { display: block; height: 100%; border-radius: var(--md-sys-shape-corner-full); background: var(--line); opacity: .75; }
 
-.c-share em { width: 48px; font-style: normal; font-size: 12.5px; color: var(--ink); }
+.c-share em { width: 48px; font-style: normal; font-size: var(--md-sys-typescale-label-medium-size); color: var(--ink); }
 
-.tbl tr.sum td { color: ${ACCENT.ink}; font-weight: 700; background: ${ACCENT.halo}; }
-.tbl tr.sum .c-tot { color: ${ACCENT.ink}; }
+.tbl tr.sum td { color: var(--md-sys-color-on-primary-container); font-weight: 600; background: var(--md-sys-color-primary-container); }
+.tbl tr.sum .c-tot { color: var(--md-sys-color-on-primary-container); }
+/* 总计行不带稀有度变量，条与占比改走主色与容器前景色。 */
+.tbl tr.sum .sbar i { background: var(--md-sys-color-primary); }
+.tbl tr.sum .c-share em { color: var(--md-sys-color-on-primary-container); }
 
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 12.5px;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: var(--md-sys-typescale-label-medium-size);
   font-weight: 600;
   color: var(--ink);
   background: var(--halo);
@@ -594,28 +600,28 @@ body {
 .chip .d {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: var(--md-sys-shape-corner-full);
   background: var(--line);
-  box-shadow: 0 0 8px var(--line);
 }
 
 /* ── 建造池 ─────────────────────────────────────────── */
 
 .bands { margin-top: 18px; display: flex; flex-direction: column; gap: 12px; }
 
+/* 分层改由容器色承担，稀有度仍由描边、色片与色条三重交代。 */
 .band {
   padding: 13px 16px 14px;
-  border-radius: 16px;
+  border-radius: var(--md-sys-shape-corner-large);
   border: 1px solid var(--edge);
-  background: linear-gradient(120deg, var(--halo), rgba(255,255,255,.022));
+  background: var(--md-sys-color-surface-container-high);
 }
 
 .band-hd { display: flex; align-items: center; gap: 12px; margin-bottom: 11px; }
-.band-hd .olb { font-size: 12px; color: rgba(200,224,246,.5); }
-.band-hd .obar { width: 118px; height: 6px; border-radius: 999px; background: ${SCHEME.surfaceContainerHighest}; overflow: hidden; }
-.band-hd .obar i { display: block; height: 100%; border-radius: 999px; background: var(--line); opacity: .8; }
-.band-hd .odds { font-size: 12.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
-.band-hd .cnt { margin-left: auto; font-size: 12px; color: rgba(200,224,246,.5); font-variant-numeric: tabular-nums; }
+.band-hd .olb { font-size: var(--md-sys-typescale-label-medium-size); color: var(--md-sys-color-on-surface-variant); }
+.band-hd .obar { width: 118px; height: 6px; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-surface-container-highest); overflow: hidden; }
+.band-hd .obar i { display: block; height: 100%; border-radius: var(--md-sys-shape-corner-full); background: var(--line); opacity: .8; }
+.band-hd .odds { font-family: ${NUM_FONT}; font-size: var(--md-sys-typescale-label-medium-size); color: var(--ink); font-variant-numeric: tabular-nums; }
+.band-hd .cnt { margin-left: auto; font-family: ${NUM_FONT}; font-size: var(--md-sys-typescale-label-medium-size); color: var(--md-sys-color-on-surface-variant); font-variant-numeric: tabular-nums; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 7px; }
 
@@ -624,21 +630,21 @@ body {
   align-items: center;
   gap: 7px;
   padding: 4px 12px 4px 4px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.07);
-  background: ${SCHEME.surfaceContainerHigh};
+  border-radius: var(--md-sys-shape-corner-full);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-highest);
 }
 
 .ship-chip img {
   display: block;
   width: 26px;
   height: 26px;
-  border-radius: 8px;
+  border-radius: var(--md-sys-shape-corner-small);
   object-fit: cover;
   object-position: center 12%;
 }
 
-.ship-chip .nm { font-size: 12.5px; color: var(--ink); }
+.ship-chip .nm { font-size: var(--md-sys-typescale-label-medium-size); color: var(--ink); }
 
 /* ── 排行榜 ─────────────────────────────────────────── */
 
@@ -651,9 +657,9 @@ body {
   gap: 12px;
   margin-bottom: 6px;
   padding: 9px 16px;
-  border-radius: 13px;
-  border: 1px solid rgba(255,255,255,.05);
-  background: rgba(255,255,255,.038);
+  border-radius: var(--md-sys-shape-corner-medium);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-high);
 }
 
 .rank-head {
@@ -662,17 +668,21 @@ body {
   gap: 12px;
   margin-bottom: 4px;
   padding: 0 16px 6px;
-  font-size: 11.5px;
+  font-size: var(--md-sys-typescale-label-small-size);
   letter-spacing: 1px;
-  color: rgba(160,200,235,.55);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .rank-head span:first-child { text-align: center; }
 .rank-head span:nth-child(4), .rank-head span:nth-child(5), .rank-head span:nth-child(6) { text-align: right; }
 
-.rank-row.t1 { border-color: rgba(240,198,106,.30); background: linear-gradient(100deg, rgba(240,198,106,.16), rgba(240,198,106,.05)); }
-.rank-row.t2 { border-color: rgba(210,226,242,.24); background: linear-gradient(100deg, rgba(210,226,242,.12), rgba(210,226,242,.04)); }
-.rank-row.t3 { border-color: rgba(232,167,106,.26); background: linear-gradient(100deg, rgba(232,167,106,.13), rgba(232,167,106,.04)); }
+/*
+ * 前三名的底色与描边取 MEDAL 的金银铜，尾两位是叠在卡片色上的透明度。
+ * 名次的含义固定，不跟主题变色；徽章里的数字始终在场，颜色不是唯一通道。
+ */
+.rank-row.t1 { border-color: ${MEDAL.gold}4d; background: linear-gradient(100deg, ${MEDAL.gold}29, ${MEDAL.gold}0d); }
+.rank-row.t2 { border-color: ${MEDAL.silver}3d; background: linear-gradient(100deg, ${MEDAL.silver}1f, ${MEDAL.silver}0a); }
+.rank-row.t3 { border-color: ${MEDAL.bronze}42; background: linear-gradient(100deg, ${MEDAL.bronze}21, ${MEDAL.bronze}0a); }
 
 .rk {
   justify-self: center;
@@ -681,13 +691,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  font-size: 13px;
-  font-weight: 800;
-  color: rgba(200,224,246,.5);
+  border-radius: var(--md-sys-shape-corner-full);
+  font-family: ${NUM_FONT};
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
   font-variant-numeric: tabular-nums;
 }
 
+/* 金银铜都是中色调，白字是设计系统给这三色的固定搭配（同 m3-badge--gold）。 */
 .rk.t1 { color: #fff; background: ${MEDAL.gold}; }
 .rk.t2 { color: #fff; background: ${MEDAL.silver}; }
 .rk.t3 { color: #fff; background: ${MEDAL.bronze}; }
@@ -696,43 +708,44 @@ body {
 
 .who .nm {
   display: block;
-  font-size: 14.5px;
+  font-size: var(--md-sys-typescale-title-small-size);
   font-weight: 600;
-  color: ${SCHEME.onSurface};
+  color: var(--md-sys-color-on-surface);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.who .sub { display: block; margin-top: 2px; font-size: 11px; color: rgba(190,215,238,.45); font-variant-numeric: tabular-nums; }
+.who .sub { display: block; margin-top: 2px; font-family: ${NUM_FONT}; font-size: var(--md-sys-typescale-label-small-size); color: var(--md-sys-color-on-surface-variant); font-variant-numeric: tabular-nums; }
 
 .who .me {
   display: inline-block;
   margin-left: 7px;
   padding: 1px 6px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 700;
-  color: ${SCHEME.onPrimary};
-  background: rgba(150,225,255,.85);
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: 600;
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
   vertical-align: 1px;
 }
 
-.rate { height: 22px; border-radius: 7px; overflow: hidden; background: rgba(255,255,255,.055); }
+.rate { height: 22px; border-radius: var(--md-sys-shape-corner-small); overflow: hidden; background: var(--md-sys-color-surface-container-highest); }
 
 .rate i {
   display: block;
   height: 100%;
-  border-radius: 7px;
-  background: linear-gradient(90deg, rgba(86,190,240,.42), rgba(150,225,255,.88));
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-primary);
 }
 
-.rank-row.t1 .rate i { background: linear-gradient(90deg, rgba(240,198,106,.45), rgba(255,226,150,.92)); }
+/* 榜首的条与徽章同色，名次的金银铜不跟主题走。 */
+.rank-row.t1 .rate i { background: ${MEDAL.gold}; }
 
-.pct { text-align: right; font-size: 13px; font-weight: 700; color: ${SCHEME.onSurface}; font-variant-numeric: tabular-nums; }
-.cube, .when { text-align: right; font-variant-numeric: tabular-nums; }
-.cube { font-size: 13.5px; color: ${ACCENT.ink}; }
-.when { font-size: 12px; color: rgba(190,215,238,.5); }
+.pct { text-align: right; font-family: ${NUM_FONT}; font-size: var(--md-sys-typescale-label-medium-size); font-weight: 600; color: var(--md-sys-color-on-surface); font-variant-numeric: tabular-nums; }
+.cube, .when { text-align: right; font-family: ${NUM_FONT}; font-variant-numeric: tabular-nums; }
+.cube { font-size: var(--md-sys-typescale-label-large-size); color: var(--md-sys-color-primary); }
+.when { font-size: var(--md-sys-typescale-label-medium-size); color: var(--md-sys-color-on-surface-variant); }
 
 /* ── 页脚 ───────────────────────────────────────────── */
 
@@ -742,12 +755,12 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  border-top: 1px solid rgba(150,205,245,.13);
-  font-size: 11.5px;
-  color: rgba(190,215,238,.5);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  font-size: var(--md-sys-typescale-label-small-size);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
-.ft i { width: 3px; height: 3px; border-radius: 50%; background: rgba(190,215,238,.3); }
+.ft i { width: 3px; height: 3px; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-outline-variant); }
 .ft .sp { flex: 1; }
 `
 
@@ -868,7 +881,7 @@ export function statsTable(stats: BuildStats, favourite: Favourite, info: StatsI
 
   const row = (label: string, data: StatsRow, key: RarityKey | null) => {
     const share = grand ? Math.min(100, ((data.total ?? 0) / grand) * 100) : 0
-    return `<tr${key ? '' : ' class="sum"'} style="${key ? vars(key) : GOLD_VARS}">
+    return `<tr${key ? '' : ' class="sum"'}${key ? ` style="${vars(key)}"` : ''}>
       <td>${key ? chip(key, label) : escape(label)}</td>
       <td>${number(data[BuildType.Light])}</td>
       <td>${number(data[BuildType.Heavy])}</td>

@@ -102,13 +102,15 @@ export function apply(ctx: Context, config: Config) {
   }
 
   async function picture(session: Session, html: string, caption?: string, text?: string) {
+    // 部署者关图与渲染失败走同一条出口：等价文本，不报错
+    const fallback = () => reply(session, text ?? '❌ 图片没能生成\n详细原因见后台日志，稍后再试一次。')
+    if (config.disableImages) return fallback()
     try {
       const buffer = await screenshot(ctx, html)
       return reply(session, caption ? [caption, h.image(buffer, 'image/png')] : h.image(buffer, 'image/png'))
     } catch (error) {
       logger.error('生成图片失败：%s', error.message)
-      // 渲染不可用时安静回退到等价文本，不回一句报错
-      return reply(session, text ?? '❌ 图片没能生成\n详细原因见后台日志，稍后再试一次。')
+      return fallback()
     }
   }
 

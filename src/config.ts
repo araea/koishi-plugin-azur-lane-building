@@ -16,6 +16,7 @@ export interface Config {
   enableShipLines: boolean
   atReply: boolean
   quoteReply: boolean
+  disableImages: boolean
 }
 
 const pool = (defaults: Partial<ShipRareList>) => Schema.object({
@@ -71,5 +72,7 @@ export const Config: Schema<Config> = Schema.intersect([
   Schema.object({
     atReply: Schema.boolean().default(false).description('回复时 @ 用户。'),
     quoteReply: Schema.boolean().default(true).description('回复时引用消息。'),
+    disableImages: Schema.boolean().default(false)
+      .description('全部改用文本，不发送图片。渲染服务不可用时用得上。'),
   }).description('回复设置'),
 ])
