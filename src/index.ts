@@ -20,7 +20,7 @@ export const usage = `## 使用
 | \`alb.每日魔方\` | 每日领取魔方 |
 | \`alb.抽轻型池 / 抽重型池 / 抽特型池 [次数]\` | 建造 |
 | \`alb.轻型池 / 重型池 / 特型池\` | 查看池内容与出货率 |
-| \`alb.抽卡记录\` | 个人建造统计 |
+| \`alb.建造记录\` | 个人建造统计 |
 | \`alb.收藏率排行榜\` | 收藏率排行榜 |
 
 ## 出货率
@@ -234,7 +234,7 @@ export function apply(ctx: Context, config: Config) {
       .action(({ session }) => picture(session, poolTable(entry.pool as ShipRareList, entry.odds as Record<RarityKey, number>, entry.type, entry.cost)))
   }
 
-  cmd.subcommand('.抽卡记录', '查看个人建造统计')
+  cmd.subcommand('.建造记录', '查看个人建造统计')
     .action(async ({ session }) => {
       const record = await profile(session.userId)
       if (!record) return reply(session, `💡 账号还没有激活\n发送「alb.每日魔方」领一份魔方，港区就开张了。${line()}`)
