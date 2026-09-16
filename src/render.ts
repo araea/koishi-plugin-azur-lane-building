@@ -196,7 +196,7 @@ body {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 2.4px;
-  color: ${SCHEME.outline};
+  color: ${SCHEME.onSurfaceVariant};
   text-transform: uppercase;
 }
 
@@ -354,7 +354,7 @@ body {
 
 .ship-meta i { width: 3px; height: 3px; border-radius: 50%; background: ${SCHEME.outline}; }
 .ship-meta .rr { color: var(--ink); }
-.ship-meta .tm { color: ${SCHEME.outline}; font-variant-numeric: tabular-nums; }
+.ship-meta .tm { color: ${SCHEME.onSurfaceVariant}; font-variant-numeric: tabular-nums; }
 
 .idx {
   position: absolute;
