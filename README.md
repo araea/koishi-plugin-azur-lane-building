@@ -1,6 +1,6 @@
 # koishi-plugin-azur-lane-building
 
-碧蓝航线建造模拟器
+碧蓝航线建造模拟器 · 每日魔方、抽池与收藏率排行
 
 ## 安装
 
