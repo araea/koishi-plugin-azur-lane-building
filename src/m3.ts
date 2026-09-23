@@ -264,6 +264,9 @@ export const SHAPE = {
   full: 9999,
 } as const
 
+/** 图片和组件共用的间距刻度，按 4 px 基准组织。 */
+export const SPACING = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const
+
 /** 正文与标题字体栈，覆盖 Windows / macOS / Linux 与随包字体三种情况。 */
 export const FONT_STACK =
   '"Roboto Flex", "Roboto", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", system-ui, sans-serif'
@@ -332,6 +335,7 @@ export function colorVars(s: Scheme) {
 /** 形状、字阶、高度的变量，与配色一起构成完整的令牌集。 */
 export function systemVars() {
   const shape = Object.entries(SHAPE).map(([name, value]) => `--md-sys-shape-corner-${kebab(name)}:${value}px`)
+  const spacing = Object.entries(SPACING).map(([name, value]) => `--md-sys-spacing-${kebab(name)}:${value}px`)
   const elevation = ELEVATION.map((value, level) => `--md-sys-elevation-level${level}:${value}`)
   const type = Object.entries(TYPE).flatMap(([name, style]) => [
     `--md-sys-typescale-${kebab(name)}-size:${style.size}px`,
@@ -339,7 +343,7 @@ export function systemVars() {
     `--md-sys-typescale-${kebab(name)}-weight:${style.weight}`,
     `--md-sys-typescale-${kebab(name)}-tracking:${style.tracking}px`,
   ])
-  return [...shape, ...elevation, ...type, `--md-sys-typescale-font:${FONT_STACK}`, `--md-sys-typescale-font-mono:${MONO_STACK}`].join(';')
+  return [...shape, ...spacing, ...elevation, ...type, `--md-sys-typescale-font:${FONT_STACK}`, `--md-sys-typescale-font-mono:${MONO_STACK}`].join(';')
 }
 
 /** 一段可直接塞进 `<style>` 的基础样式：令牌 + 排版重置。 */
@@ -452,8 +456,8 @@ export function components() {
  * 名次的含义是固定的，跟着主题变色反而认不出来。三种金属色本身也走 LCh，
  * 色调彼此拉开一档，所以放在任何主题里明暗关系都成立。
  */
-.m3-badge--gold{background:${MEDAL.gold};color:#fff}
-.m3-badge--silver{background:${MEDAL.silver};color:#fff}
+.m3-badge--gold{background:${MEDAL.gold};color:#000}
+.m3-badge--silver{background:${MEDAL.silver};color:#000}
 .m3-badge--bronze{background:${MEDAL.bronze};color:#fff}
 
 /*

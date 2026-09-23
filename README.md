@@ -10,6 +10,12 @@ yarn add koishi-plugin-azur-lane-building
 
 在 Koishi 配置中启用，并提供 database 与 puppeteer 服务。
 
+## 图片设计规范
+
+图片以 Material 3 Expressive 为视觉基础，使用 `src/m3.ts` 中的语义色、字阶、形状、高度和间距令牌。四类图片共用不透明深色画布和圆角内容卡片；导出的 PNG 四角始终与主题背景一致。舰船稀有度同时用名称、数字和颜色表达，避免只靠色相传递信息。
+
+浏览器预览按宽度重排卡片，统计表和排行榜保留可横向浏览的完整列。平台交互遵循 Apple HIG，可读性和 WCAG 2.2 AA 优先；Carbon 仅补充响应式及密集信息布局，Miuix 仅用于视觉精修。出现冲突时按平台原生规范、可用性与无障碍、产品一致性、M3E、Carbon、Miuix 的顺序裁决。
+
 ## 指令
 
 | 指令 | 说明 |

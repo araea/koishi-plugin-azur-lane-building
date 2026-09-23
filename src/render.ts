@@ -129,14 +129,19 @@ const MEDAL_CLASS = ['m3-badge--gold', 'm3-badge--silver', 'm3-badge--bronze']
 
 const STYLE = `
 ${baseline(SCHEME)}${components()}
-/* 截图对象是 .card，底色透明即可；其余排版重置由 baseline 给。 */
-body { padding: 22px; background: transparent; }
+/* PNG 必须由不透明的矩形画布承载圆角卡片，图片查看器才不会用白色填角。 */
+body { background: var(--md-sys-color-background); }
+.canvas {
+  width: 948px;
+  padding: var(--md-sys-spacing-xl);
+  background: var(--md-sys-color-background);
+}
 
 /* 所有图片共用同一张「舰桥面板」：同宽、同圆角、同底色，风格自然统一。 */
 .card {
   position: relative;
-  width: 900px;
-  padding: 26px 32px 20px;
+  width: 100%;
+  padding: var(--md-sys-spacing-xl) var(--md-sys-spacing-xxl);
   border-radius: var(--md-sys-shape-corner-extra-large-increased);
   overflow: hidden;
   background: var(--md-sys-color-surface-container);
@@ -161,8 +166,8 @@ body { padding: 22px; background: transparent; }
 .hd {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding-bottom: 16px;
+  gap: var(--md-sys-spacing-lg);
+  padding-bottom: var(--md-sys-spacing-lg);
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
 }
 
@@ -277,7 +282,8 @@ body { padding: 22px; background: transparent; }
 
 /* ── 舰娘卡 ─────────────────────────────────────────── */
 
-.grid { display: grid; gap: 13px; margin-top: 16px; }
+.grid { display: grid; gap: var(--md-sys-spacing-md); margin-top: var(--md-sys-spacing-lg); }
+.grid--compact { justify-content: center; }
 
 .ship {
   position: relative;
@@ -502,6 +508,7 @@ body { padding: 22px; background: transparent; }
   overflow: hidden;
   border-radius: var(--md-sys-shape-corner-full);
   border: 2px solid var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container);
   box-shadow: var(--md-sys-elevation-level1);
 }
 
@@ -764,10 +771,34 @@ body { padding: 22px; background: transparent; }
 
 .ft i { width: 3px; height: 3px; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-outline-variant); }
 .ft .sp { flex: 1; }
+
+/* 浏览器预览随容器收缩；截图仍采用固定画布，长表格保留列对齐。 */
+@media (max-width: 948px) {
+  .canvas { width: 100%; padding: var(--md-sys-spacing-lg); }
+  .card { padding: var(--md-sys-spacing-xl); }
+  .hd { flex-wrap: wrap; }
+  .hd-metrics { width: 100%; }
+  .metric { flex: 1; }
+  .grid, .grid--compact { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .table-scroll, .rank { overflow-x: auto; }
+  .tbl { min-width: 740px; }
+  .rank-head, .rank-row { min-width: 780px; }
+}
+@media (max-width: 600px) {
+  .canvas { padding: var(--md-sys-spacing-md); }
+  .card { padding: var(--md-sys-spacing-lg); }
+  .hd-title { flex-wrap: wrap; }
+  .grid, .grid--compact { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .hero { flex-direction: column; align-items: stretch; }
+  .hero-av { width: min(100%, 188px); height: auto; aspect-ratio: 1; }
+  .hero-name { white-space: normal; }
+  .panels { grid-template-columns: 1fr; }
+  .ft { flex-wrap: wrap; }
+}
 `
 
 const PAGE = (body: string) => `<!DOCTYPE html>
-<html lang="zh"><head><meta charset="UTF-8"><style>${STYLE}</style></head><body>${body}</body></html>`
+<html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${STYLE}</style></head><body><main class="canvas">${body}</main></body></html>`
 
 const header = (title: string, en: string, sub: string, glyph: string, metrics: [string, string][]) => `
   <header class="hd">
@@ -793,7 +824,7 @@ function shipCard(record: BuildRecord) {
   if (HIGHLIGHT.includes(record.rarityKey)) classes.push('hi')
   if (record.rarityKey === 'Legend') classes.push('legend')
   return `<article class="${classes.join(' ')}" style="${vars(record.rarityKey)}">
-    <div class="ship-av"><img src="${escape(avatarOf(record.shipName))}" alt=""></div>
+    <div class="ship-av"><img src="${escape(avatarOf(record.shipName))}" alt="" onerror="this.style.visibility='hidden'"></div>
     <div class="ship-name">${escape(record.shipName)}</div>
     <div class="ship-meta">
       <span class="rr">${escape(rarityOf(record.rarityKey).name)}</span><i></i>
@@ -808,7 +839,7 @@ function shipCard(record: BuildRecord) {
 function heroCard(record: BuildRecord, poolName: string) {
   return `<section class="hero${record.rarityKey === 'Legend' ? ' legend' : ''}" style="${vars(record.rarityKey)}">
     <span class="hero-mark">${RARITY_EN[record.rarityKey]}</span>
-    <div class="hero-av"><span class="bar"></span><img src="${escape(avatarOf(record.shipName))}" alt=""></div>
+    <div class="hero-av"><span class="bar"></span><img src="${escape(avatarOf(record.shipName))}" alt="" onerror="this.style.visibility='hidden'"></div>
     <div class="hero-body">
       ${chip(record.rarityKey, rarityOf(record.rarityKey).name)}
       <div class="hero-name">${escape(record.shipName)}</div>
@@ -859,13 +890,13 @@ export function buildResult(records: BuildRecord[], info: BuildInfo) {
   // 按出货顺序平铺，稀有度靠卡片配色区分；不足一行时居中，避免右侧留白。
   const columns = Math.min(records.length, 5)
   const layout = columns < 5
-    ? `grid-template-columns:repeat(${columns},164px);justify-content:center`
-    : 'grid-template-columns:repeat(5,1fr)'
+    ? `grid-template-columns:repeat(${columns},164px)`
+    : 'grid-template-columns:repeat(5,minmax(0,1fr))'
 
   return PAGE(`<div class="card">
     ${head}
     ${tally(records)}
-    <div class="grid" style="${layout}">${records.map(shipCard).join('')}</div>
+    <div class="grid${columns < 5 ? ' grid--compact' : ''}" style="${layout}">${records.map(shipCard).join('')}</div>
     ${foot}
   </div>`)
 }
@@ -904,7 +935,7 @@ export function statsTable(stats: BuildStats, favourite: Favourite, info: StatsI
       <div class="panel gold">
         <div class="panel-label">最常获得</div>
         <div class="fav-row">
-          <div class="fav-av"><img src="${escape(favourite.avatar)}" alt=""></div>
+          <div class="fav-av"><img src="${escape(favourite.avatar)}" alt="" onerror="this.style.visibility='hidden'"></div>
           <div class="fav-txt">
             <div class="fav-name">${escape(favourite.name)}</div>
             <div class="fav-sub">占累计建造 ${favShare.toFixed(1)}%</div>
@@ -918,10 +949,10 @@ export function statsTable(stats: BuildStats, favourite: Favourite, info: StatsI
         <div class="prog-bar"><i style="width:${(rate * 100).toFixed(1)}%"></i></div>
       </div>
     </div>
-    <table class="tbl">
+    <div class="table-scroll"><table class="tbl">
       <thead><tr><th>稀有度</th><th>${shortPool(BuildType.Light)}</th><th>${shortPool(BuildType.Heavy)}</th><th>${shortPool(BuildType.Special)}</th><th>总计</th><th>占比</th></tr></thead>
       <tbody>${body}${row('总计', stats.total ?? {}, null)}</tbody>
-    </table>
+    </table></div>
     ${footer([`已收集 ${number(info.owned)} / ${number(info.totalShips)} 艘`, `尚缺 ${number(Math.max(0, info.totalShips - info.owned))} 艘`])}
   </div>`)
 }
@@ -942,7 +973,7 @@ export function poolTable(pool: ShipRareList, odds: Record<RarityKey, number>, t
         <span class="cnt">${ships.length} 艘</span>
       </div>
       <div class="chips">${ships.map((name) => `
-        <span class="ship-chip"><img src="${escape(avatarOf(name))}" alt=""><span class="nm">${escape(name)}</span></span>`).join('')}</div>
+        <span class="ship-chip"><img src="${escape(avatarOf(name))}" alt="" onerror="this.style.visibility='hidden'"><span class="nm">${escape(name)}</span></span>`).join('')}</div>
     </section>`
   }).join('')
 
@@ -989,7 +1020,7 @@ export async function screenshot(ctx: Context, html: string) {
   try {
     await page.setViewport({ width: 1000, height: 800, deviceScaleFactor: 1.5 })
     await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 }).catch(() => {})
-    return await (await page.$('.card')).screenshot({ type: 'png' })
+    return await (await page.$('.canvas')).screenshot({ type: 'png', omitBackground: false })
   } finally {
     await page.close()
   }

@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-azur-lane-building",
   "description": "Koishi 插件 · 碧蓝航线建造模拟器。",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
