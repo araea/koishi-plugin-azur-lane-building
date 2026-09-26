@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-azur-lane-building",
   "description": "Koishi 碧蓝航线建造模拟器：支持抽池、建造记录和收藏率排行。",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
