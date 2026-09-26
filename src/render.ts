@@ -133,7 +133,7 @@ ${baseline(SCHEME)}${components()}
 body { background: var(--md-sys-color-background); }
 .canvas {
   width: 948px;
-  padding: var(--md-sys-spacing-xl);
+  padding: var(--m3-spacing-xl);
   background: var(--md-sys-color-background);
 }
 
@@ -141,24 +141,11 @@ body { background: var(--md-sys-color-background); }
 .card {
   position: relative;
   width: 100%;
-  padding: var(--md-sys-spacing-xl) var(--md-sys-spacing-xxl);
+  padding: var(--m3-spacing-xl) var(--m3-spacing-xxl);
   border-radius: var(--md-sys-shape-corner-extra-large-increased);
   overflow: hidden;
   background: var(--md-sys-color-surface-container);
   box-shadow: var(--md-sys-elevation-level2);
-}
-
-/* 顶边一道主色细线，是四张图共同的「签名」 */
-.card::after {
-  content: "";
-  position: absolute;
-  left: 32px;
-  top: 0;
-  width: 72px;
-  height: 4px;
-  border-radius: 0 0 var(--md-sys-shape-corner-extra-small) var(--md-sys-shape-corner-extra-small);
-  background: var(--md-sys-color-primary);
-  pointer-events: none;
 }
 
 .card > * { position: relative; }
@@ -166,8 +153,8 @@ body { background: var(--md-sys-color-background); }
 .hd {
   display: flex;
   align-items: center;
-  gap: var(--md-sys-spacing-lg);
-  padding-bottom: var(--md-sys-spacing-lg);
+  gap: var(--m3-spacing-lg);
+  padding-bottom: var(--m3-spacing-lg);
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
 }
 
@@ -282,7 +269,7 @@ body { background: var(--md-sys-color-background); }
 
 /* ── 舰娘卡 ─────────────────────────────────────────── */
 
-.grid { display: grid; gap: var(--md-sys-spacing-md); margin-top: var(--md-sys-spacing-lg); }
+.grid { display: grid; gap: var(--m3-spacing-md); margin-top: var(--m3-spacing-lg); }
 .grid--compact { justify-content: center; }
 
 .ship {
@@ -662,9 +649,9 @@ body { background: var(--md-sys-color-background); }
 
 .rank-row {
   display: grid;
-  grid-template-columns: 54px 1fr 208px 72px 90px 60px;
+  grid-template-columns: 54px 1fr 200px 72px 90px 60px;
   align-items: center;
-  gap: 12px;
+  gap: 12px 16px;
   margin-bottom: 6px;
   padding: 9px 16px;
   border-radius: var(--md-sys-shape-corner-medium);
@@ -674,8 +661,8 @@ body { background: var(--md-sys-color-background); }
 
 .rank-head {
   display: grid;
-  grid-template-columns: 54px 1fr 208px 72px 90px 60px;
-  gap: 12px;
+  grid-template-columns: 54px 1fr 200px 72px 90px 60px;
+  gap: 12px 16px;
   margin-bottom: 4px;
   padding: 0 16px 6px;
   font-size: var(--md-sys-typescale-label-small-size);
@@ -716,7 +703,9 @@ body { background: var(--md-sys-color-background); }
 .who { min-width: 0; }
 
 .who .nm {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-width: 0;
   font-size: var(--md-sys-typescale-title-small-size);
   font-weight: 600;
   color: var(--md-sys-color-on-surface);
@@ -727,7 +716,10 @@ body { background: var(--md-sys-color-background); }
 
 .who .sub { display: block; margin-top: 2px; font-family: ${NUM_FONT}; font-size: var(--md-sys-typescale-label-small-size); color: var(--md-sys-color-on-surface-variant); font-variant-numeric: tabular-nums; }
 
+.who .nm-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
 .who .me {
+  flex: none;
   display: inline-block;
   margin-left: 7px;
   padding: 1px 6px;
@@ -774,8 +766,8 @@ body { background: var(--md-sys-color-background); }
 
 /* 浏览器预览随容器收缩；截图仍采用固定画布，长表格保留列对齐。 */
 @media (max-width: 948px) {
-  .canvas { width: 100%; padding: var(--md-sys-spacing-lg); }
-  .card { padding: var(--md-sys-spacing-xl); }
+  .canvas { width: 100%; padding: var(--m3-spacing-lg); }
+  .card { padding: var(--m3-spacing-xl); }
   .hd { flex-wrap: wrap; }
   .hd-metrics { width: 100%; }
   .metric { flex: 1; }
@@ -785,8 +777,8 @@ body { background: var(--md-sys-color-background); }
   .rank-head, .rank-row { min-width: 780px; }
 }
 @media (max-width: 600px) {
-  .canvas { padding: var(--md-sys-spacing-md); }
-  .card { padding: var(--md-sys-spacing-lg); }
+  .canvas { padding: var(--m3-spacing-md); }
+  .card { padding: var(--m3-spacing-lg); }
   .hd-title { flex-wrap: wrap; }
   .grid, .grid--compact { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   .hero { flex-direction: column; align-items: stretch; }
@@ -994,7 +986,7 @@ export function ranking(rows: RankRow[], totalShips = 0, selfId?: string) {
     return `<div class="rank-row${tier}">
       <div class="rk m3-badge${index < 3 ? ` ${MEDAL_CLASS[index]}` : ''}">${index + 1}</div>
       <div class="who">
-        <span class="nm">${escape(item.username)}${selfId && item.userId === selfId ? '<span class="me">你</span>' : ''}</span>
+        <span class="nm"><span class="nm-text">${escape(item.username)}</span>${selfId && item.userId === selfId ? '<span class="me">你</span>' : ''}</span>
         ${totalShips ? `<span class="sub">已收集 ${number(owned)} / ${number(totalShips)} 艘</span>` : ''}
       </div>
       <div class="rate"><i style="width:${(rate * 100).toFixed(1)}%"></i></div>
