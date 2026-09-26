@@ -1,3 +1,4 @@
+import { usePresentation } from './ux'
 import { Context, h, Random, Session } from 'koishi'
 import {} from 'koishi-plugin-puppeteer'
 import { Config } from './config'
@@ -66,6 +67,7 @@ const isSameDay = (a: Date | number, b: Date | number) => {
 }
 
 export function apply(ctx: Context, config: Config) {
+  const presentation = usePresentation(ctx, 'alb')
   const logger = ctx.logger(name)
   const wiki = createWiki(ctx, config.requestTimeout)
 
@@ -104,10 +106,10 @@ export function apply(ctx: Context, config: Config) {
   async function picture(session: Session, html: string, caption?: string, text?: string) {
     // 部署者关图与渲染失败走同一条出口：等价文本，不报错
     const fallback = () => reply(session, text ?? '❌ 图片没能生成\n详细原因见后台日志，稍后再试一次。')
-    if (config.disableImages) return fallback()
+    if (config.disableImages || presentation.textOnly(session)) return fallback()
     try {
       const buffer = await screenshot(ctx, html)
-      return reply(session, caption ? [caption, h.image(buffer, 'image/png')] : h.image(buffer, 'image/png'))
+      return reply(session, presentation.present(session, h.image(buffer, 'image/png'), h.text(text ?? caption ?? '图片内容')))
     } catch (error) {
       logger.error('生成图片失败：%s', error.message)
       return fallback()
