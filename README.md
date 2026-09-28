@@ -1,6 +1,6 @@
 # 碧蓝航线建造模拟器
 
-Koishi 插件，模拟轻型、重型与特型建造，记录结果并统计收藏率
+Koishi 插件：模拟碧蓝航线建造，记录出货与收藏率并生成排行榜
 
 [![GitHub](https://img.shields.io/badge/GitHub-仓库-181717)](https://github.com/araea/koishi-plugin-azur-lane-building)
 [![npm](https://img.shields.io/badge/npm-包-CB3837)](https://www.npmjs.com/package/koishi-plugin-azur-lane-building)
