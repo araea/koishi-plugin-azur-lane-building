@@ -5,6 +5,7 @@ import { Config } from './config'
 import { BuildType, countShips, HEAVY_ODDS, LIGHT_ODDS, parsePool, RARITIES, RarityKey, rollRarity, ShipRareList } from './pools'
 import { BuildRecord, BuildStats, buildResult, poolTable, ranking, screenshot, statsTable } from './render'
 import { createWiki } from './wiki'
+import { helpOf } from './help'
 
 export { Config }
 export const name = 'azur-lane-building'
@@ -18,6 +19,7 @@ export const usage = `## 使用
 
 | 指令 | 说明 |
 | --- | --- |
+| \`alb\` | 查看指令列表 |
 | \`alb.每日魔方\` | 领取每日魔方 |
 | \`alb.抽轻型池 [次数]\` | 进行轻型建造 |
 | \`alb.抽重型池 [次数]\` | 进行重型建造 |
@@ -188,7 +190,11 @@ export function apply(ctx: Context, config: Config) {
   }
 
   const cmd = ctx.command('alb', '碧蓝航线建造模拟器')
-    .action(({ session }) => session.execute('help alb'))
+    .userFields(['authority'])
+    .action(async ({ session }) => {
+      const { title, entries } = await helpOf(session, 'alb')
+      return reply(session, [`📋 ${title}`, ...entries.map(({ name, description }) => `${name} · ${description}`), '先发送「alb.每日魔方」领魔方，再发送「alb.抽轻型池」建造。'].join('\n'))
+    })
 
   /** 建造与签到都读改写同一份港区档案，按用户串行。 */
   const busy = new Set<string>()

@@ -19,6 +19,7 @@ npm i koishi-plugin-azur-lane-building
 
 | 指令 | 说明 |
 | --- | --- |
+| `alb` | 查看指令列表 |
 | `alb.每日魔方` | 领取每日魔方 |
 | `alb.抽轻型池 [次数]` | 轻型建造 |
 | `alb.抽重型池 [次数]` | 重型建造 |
