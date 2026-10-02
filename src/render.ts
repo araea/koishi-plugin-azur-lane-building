@@ -129,6 +129,19 @@ const MEDAL_CLASS = ['m3-badge--gold', 'm3-badge--silver', 'm3-badge--bronze']
 
 const STYLE = `
 ${baseline(SCHEME)}${components()}
+/*
+ * 这张图 948px 宽，在聊天里会被缩到一半以下再看：M3 手机基准里 11 / 12px 的小字号
+ * 缩出来只剩 4 个点，稀有度、第几次、魔方、日期这些读数恰恰都是小字号。
+ * 令牌按一档放大、最小 13px；改在本插件内，m3.ts 是同步件。
+ */
+:root {
+  --md-sys-typescale-label-small-size: 13px;
+  --md-sys-typescale-body-small-size: 14px;
+  --md-sys-typescale-label-medium-size: 14px;
+  --md-sys-typescale-body-medium-size: 15px;
+  --md-sys-typescale-label-large-size: 15px;
+  --md-sys-typescale-title-small-size: 16px;
+}
 /* PNG 必须由不透明的矩形画布承载圆角卡片，图片查看器才不会用白色填角。 */
 body { background: var(--md-sys-color-background); }
 .canvas {
